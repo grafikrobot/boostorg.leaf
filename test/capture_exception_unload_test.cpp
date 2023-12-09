@@ -20,9 +20,9 @@ int main()
 #ifdef BOOST_LEAF_TEST_SINGLE_HEADER
 #   include "leaf.hpp"
 #else
-#   include <boost/leaf/capture.hpp>
 #   include <boost/leaf/handle_errors.hpp>
 #   include <boost/leaf/exception.hpp>
+#   include <boost/leaf/result.hpp>
 #   include <boost/leaf/on_error.hpp>
 #endif
 
@@ -38,25 +38,26 @@ void test( F f_ )
     auto f =
         [=]
         {
-            try
-            {
-                leaf::capture( std::make_shared<leaf::leaf_detail::polymorphic_context_impl<leaf::context<info<1>, info<2>, info<3>>>>(), f_);
-                BOOST_TEST(false);
-                return std::exception_ptr();
-            }
-            catch(...)
-            {
-                return std::current_exception();
-            }
+            return leaf::try_handle_some(
+                [&]() -> leaf::result<void>
+                {
+                    f_();
+                    BOOST_TEST(false);
+                    return { };
+                },
+                []( leaf::dynamic_capture const & cap ) -> leaf::result<void>
+                {
+                    return cap;
+                });
         };
 
     {
         int c=0;
-        auto ep = f();
+        leaf::result<void> r = f();
         leaf::try_catch(
-            [&ep]
+            [&r]
             {
-                return std::rethrow_exception(ep);
+                return r.value();
             },
             [&c]( info<1> const & x )
             {
@@ -74,11 +75,11 @@ void test( F f_ )
 
     {
         int c=0;
-        auto ep = f();
+        leaf::result<void> r = f();
         leaf::try_catch(
-            [&ep]
+            [&r]
             {
-                return std::rethrow_exception(ep);
+                return r.value();
             },
             [&c]( info<2> const & x )
             {
@@ -95,11 +96,12 @@ void test( F f_ )
     }
 
     {
-        auto ep = f();
+        leaf::result<void> r = f();
         int what = leaf::try_catch(
-            [&ep]
+            [&r]
             {
-                std::rethrow_exception(ep); return 0;
+                (void) r.value();
+                return 0;
             },
             []( info<1> const & x )
             {
@@ -114,11 +116,12 @@ void test( F f_ )
     }
 
     {
-        auto ep = f();
+        leaf::result<void> r = f();
         int what = leaf::try_catch(
-            [&ep]
+            [&r]
             {
-                std::rethrow_exception(ep); return 0;
+                (void) r.value();
+                return 0;
             },
             []( info<2> const & x )
             {
@@ -133,11 +136,12 @@ void test( F f_ )
     }
 
     {
-        auto ep = f();
+        leaf::result<void> r = f();
         bool what = leaf::try_catch(
-            [&ep]
+            [&r]
             {
-                std::rethrow_exception(ep); return true;
+                (void) r.value();
+                return true;
             },
             []( info<1> const &, info<2> const & )
             {
@@ -161,11 +165,12 @@ void test( F f_ )
     }
 
     {
-        auto ep = f();
+        leaf::result<void> r = f();
         bool what = leaf::try_catch(
-            [&ep]
+            [&r]
             {
-                std::rethrow_exception(ep); return false;
+                (void) r.value();
+                return false;
             },
             []( info<1> const &, info<2> const & )
             {

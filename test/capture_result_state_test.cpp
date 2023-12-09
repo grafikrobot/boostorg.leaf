@@ -20,7 +20,6 @@ int main()
 #ifdef BOOST_LEAF_TEST_SINGLE_HEADER
 #   include "leaf.hpp"
 #else
-#   include <boost/leaf/capture.hpp>
 #   include <boost/leaf/result.hpp>
 #   include <boost/leaf/handle_errors.hpp>
 #endif
@@ -63,30 +62,22 @@ struct info
 
 int main()
 {
-    auto error_handlers = std::make_tuple(
-        []( info<1>, info<3> )
-        {
-            return 42;
-        },
-        []
-        {
-            return -42;
-        } );
-
     {
-        leaf::context_ptr ctx = leaf::make_shared_context(error_handlers);
-        auto r = leaf::capture(
-            ctx,
+        leaf::result<int> r = leaf::try_handle_some(
             []() -> leaf::result<int>
             {
                 return leaf::new_error( info<1>{}, info<3>{} );
+            },
+            []( leaf::dynamic_capture const & cap ) -> leaf::result<int>
+            {
+                return cap;
             } );
         BOOST_TEST_EQ(count, 2);
 
 #if BOOST_LEAF_CFG_STD_STRING
         {
             std::ostringstream st;
-            st << *ctx;
+            st << r;
             std::string s = st.str();
             std::cout << s << std::endl;
 #if BOOST_LEAF_CFG_DIAGNOSTICS
@@ -101,7 +92,14 @@ int main()
             {
                 return std::move(r);
             },
-            error_handlers);
+            []( info<1>, info<3> )
+            {
+                return 42;
+            },
+            []
+            {
+                return -42;
+            } );
         BOOST_TEST_EQ(answer, 42);
     }
     BOOST_TEST_EQ(count, 0);

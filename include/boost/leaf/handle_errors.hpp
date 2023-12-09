@@ -8,9 +8,11 @@
 
 #include <boost/leaf/config.hpp>
 #include <boost/leaf/context.hpp>
-#include <boost/leaf/capture.hpp>
 
 namespace boost { namespace leaf {
+
+template <class T>
+class result;
 
 class BOOST_LEAF_SYMBOL_VISIBLE error_info
 {
@@ -19,14 +21,6 @@ class BOOST_LEAF_SYMBOL_VISIBLE error_info
 #ifndef BOOST_LEAF_NO_EXCEPTIONS
     static error_id unpack_error_id( std::exception const * ex ) noexcept
     {
-#if BOOST_LEAF_CFG_STD_SYSTEM_ERROR
-        if( std::system_error const * se = dynamic_cast<std::system_error const *>(ex) )
-            if( is_error_id(se->code()) )
-                return leaf_detail::make_error_id(se->code().value());
-        if( std::error_code const * ec = dynamic_cast<std::error_code const *>(ex) )
-            if( is_error_id(*ec) )
-                return leaf_detail::make_error_id(ec->value());
-#endif
         if( error_id const * err_id = dynamic_cast<error_id const *>(ex) )
             return *err_id;
         return current_error();
@@ -98,22 +92,18 @@ public:
 
 ////////////////////////////////////////
 
-#if BOOST_LEAF_CFG_DIAGNOSTICS
-
-class BOOST_LEAF_SYMBOL_VISIBLE diagnostic_info: public error_info
+class diagnostic_info: public error_info
 {
-    leaf_detail::e_unexpected_count const * e_uc_;
     void const * tup_;
-    void (*print_)( std::ostream &, void const * tup, int key_to_print );
+    void (*print_)( std::ostream &, void const * tup, int err_id_to_print );
 
 protected:
 
     diagnostic_info( diagnostic_info const & ) noexcept = default;
 
     template <class Tup>
-    BOOST_LEAF_CONSTEXPR diagnostic_info( error_info const & ei, leaf_detail::e_unexpected_count const * e_uc, Tup const & tup ) noexcept:
+    BOOST_LEAF_CONSTEXPR diagnostic_info( error_info const & ei, Tup const & tup ) noexcept:
         error_info(ei),
-        e_uc_(e_uc),
         tup_(&tup),
         print_(&leaf_detail::tuple_for_each<std::tuple_size<Tup>::value, Tup>::print)
     {
@@ -128,8 +118,6 @@ public:
         x.print(os);
         os << ":\n";
         x.print_(os, x.tup_, x.error().value());
-        if( x.e_uc_  )
-            x.e_uc_->print(os);
         return os;
     }
 };
@@ -139,55 +127,8 @@ namespace leaf_detail
     struct diagnostic_info_: diagnostic_info
     {
         template <class Tup>
-        BOOST_LEAF_CONSTEXPR diagnostic_info_( error_info const & ei, leaf_detail::e_unexpected_count const * e_uc, Tup const & tup ) noexcept:
-            diagnostic_info(ei, e_uc, tup)
-        {
-        }
-    };
-
-    template <>
-    struct handler_argument_traits<diagnostic_info const &>: handler_argument_always_available<e_unexpected_count>
-    {
-        template <class Tup>
-        BOOST_LEAF_CONSTEXPR static diagnostic_info_ get( Tup const & tup, error_info const & ei ) noexcept
-        {
-            return diagnostic_info_(ei, handler_argument_traits_defaults<e_unexpected_count>::check(tup, ei), tup);
-        }
-    };
-}
-
-#else
-
-class BOOST_LEAF_SYMBOL_VISIBLE diagnostic_info: public error_info
-{
-protected:
-
-    diagnostic_info( diagnostic_info const & ) noexcept = default;
-
-    BOOST_LEAF_CONSTEXPR diagnostic_info( error_info const & ei ) noexcept:
-        error_info(ei)
-    {
-    }
-
-public:
-
-    template <class CharT, class Traits>
-    friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, diagnostic_info const & x )
-    {
-        os <<
-            "leaf::diagnostic_info requires #define BOOST_LEAF_CFG_DIAGNOSTICS 1\n"
-            "leaf::error_info: ";
-        x.print(os);
-        return os << '\n';
-    }
-};
-
-namespace leaf_detail
-{
-    struct diagnostic_info_: diagnostic_info
-    {
-        BOOST_LEAF_CONSTEXPR diagnostic_info_( error_info const & ei ) noexcept:
-            diagnostic_info(ei)
+        BOOST_LEAF_CONSTEXPR diagnostic_info_( error_info const & ei, Tup const & tup ) noexcept:
+            diagnostic_info(ei, tup)
         {
         }
     };
@@ -196,9 +137,85 @@ namespace leaf_detail
     struct handler_argument_traits<diagnostic_info const &>: handler_argument_always_available<void>
     {
         template <class Tup>
-        BOOST_LEAF_CONSTEXPR static diagnostic_info_ get( Tup const &, error_info const & ei ) noexcept
+        BOOST_LEAF_CONSTEXPR static diagnostic_info_ get( Tup const & tup, error_info const & ei ) noexcept
         {
-            return diagnostic_info_(ei);
+            return diagnostic_info_(ei, tup);
+        }
+    };
+}
+
+////////////////////////////////////////
+
+#if BOOST_LEAF_CFG_CAPTURE
+
+class dynamic_capture
+{
+    template <class T>
+    friend class ::boost::leaf::result;
+
+    dynamic_capture( dynamic_capture const & ) = delete;
+    dynamic_capture & operator=( dynamic_capture const & ) = delete;
+
+    leaf_detail::dynamic_allocator * const da_;
+    error_id err_;
+
+protected:
+
+    dynamic_capture( dynamic_capture && ) = default;
+
+    BOOST_LEAF_CONSTEXPR dynamic_capture( leaf_detail::dynamic_allocator * da, error_id err ) noexcept:
+        da_(da),
+        err_(err)
+    {
+    }
+
+public:
+
+    BOOST_LEAF_CONSTEXPR bool empty() const noexcept
+    {
+        return !da_ || da_->empty();
+    }
+
+    BOOST_LEAF_CONSTEXPR int size() const noexcept
+    {
+        return da_ ? da_->size() : 0;
+    }
+
+    template <class T>
+    operator result<T>() const noexcept
+    {
+        if( da_ )
+            return da_->extract_capture_list<T>();
+        else
+            return { error_id() };
+    }
+
+    template <class CharT, class Traits>
+    friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, dynamic_capture const & x )
+    {
+        if( x.da_ )
+            x.da_->print(os, "Captured error objects:\n", x.err_.value());
+        return os;
+    }
+};
+
+namespace leaf_detail
+{
+    struct dynamic_capture_: dynamic_capture
+    {
+        BOOST_LEAF_CONSTEXPR dynamic_capture_( leaf_detail::dynamic_allocator * da, error_id err ) noexcept:
+            dynamic_capture(da, err)
+        {
+        }
+    };
+
+    template <>
+    struct handler_argument_traits<dynamic_capture const &>: handler_argument_always_available<dynamic_allocator>
+    {
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR static dynamic_capture_ get( Tup & tup, error_info const & ei ) noexcept
+        {
+            return dynamic_capture_(handler_argument_traits_defaults<dynamic_allocator>::check(tup, ei), ei.error());
         }
     };
 }
@@ -209,24 +226,36 @@ namespace leaf_detail
 
 #if BOOST_LEAF_CFG_DIAGNOSTICS
 
-class BOOST_LEAF_SYMBOL_VISIBLE verbose_diagnostic_info: public error_info
+class verbose_diagnostic_info: public error_info
 {
-    leaf_detail::e_unexpected_info const * e_ui_;
-    void const * tup_;
-    void (*print_)( std::ostream &, void const * tup, int key_to_print );
+    void const * const tup_;
+#if BOOST_LEAF_CFG_CAPTURE
+    leaf_detail::dynamic_allocator const * const da_;
+#endif
+    void (* const print_)( std::ostream &, void const * tup, int err_id_to_print );
 
 protected:
 
     verbose_diagnostic_info( verbose_diagnostic_info const & ) noexcept = default;
 
+#if BOOST_LEAF_CFG_CAPTURE
     template <class Tup>
-    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei, leaf_detail::e_unexpected_info const * e_ui, Tup const & tup ) noexcept:
+    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei, Tup const & tup, leaf_detail::dynamic_allocator const * da ) noexcept:
         error_info(ei),
-        e_ui_(e_ui),
+        tup_(&tup),
+        da_(da),
+        print_(&leaf_detail::tuple_for_each<std::tuple_size<Tup>::value, Tup>::print)
+    {
+    }
+#else
+    template <class Tup>
+    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei, Tup const & tup ) noexcept:
+        error_info(ei),
         tup_(&tup),
         print_(&leaf_detail::tuple_for_each<std::tuple_size<Tup>::value, Tup>::print)
     {
     }
+#endif
 
 public:
 
@@ -234,85 +263,62 @@ public:
     friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, verbose_diagnostic_info const & x )
     {
         os << "leaf::verbose_diagnostic_info for ";
-        int const err_id = x.error().value();
+        error_id err = x.error();
         x.print(os);
         os << ":\n";
-        x.print_(os, x.tup_, err_id);
-        if( x.e_ui_ )
-            x.e_ui_->print(os, err_id);
+        x.print_(os, x.tup_, err.value());
+#if BOOST_LEAF_CFG_CAPTURE
+        if( x.da_ )
+            x.da_->print(os, "Unhandled error objects:\n", x.error().value());
+#endif
         return os;
     }
 };
 
 namespace leaf_detail
 {
+#if BOOST_LEAF_CFG_CAPTURE
     struct verbose_diagnostic_info_: verbose_diagnostic_info
     {
         template <class Tup>
-        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, leaf_detail::e_unexpected_info const * e_ui, Tup const & tup ) noexcept:
-            verbose_diagnostic_info(ei, e_ui, tup)
+        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, Tup const & tup, dynamic_allocator const * da ) noexcept:
+            verbose_diagnostic_info(ei, tup, da)
         {
         }
     };
-
     template <>
-    struct handler_argument_traits<verbose_diagnostic_info const &>: handler_argument_always_available<e_unexpected_info>
+    struct handler_argument_traits<verbose_diagnostic_info const &>: handler_argument_always_available<dynamic_allocator>
     {
         template <class Tup>
         BOOST_LEAF_CONSTEXPR static verbose_diagnostic_info_ get( Tup const & tup, error_info const & ei ) noexcept
         {
-            return verbose_diagnostic_info_(ei, handler_argument_traits_defaults<e_unexpected_info>::check(tup, ei), tup);
+            return verbose_diagnostic_info_(ei, tup, handler_argument_traits_defaults<dynamic_allocator>::check(tup, ei));
         }
     };
-}
-
 #else
-
-class BOOST_LEAF_SYMBOL_VISIBLE verbose_diagnostic_info: public error_info
-{
-protected:
-
-    verbose_diagnostic_info( verbose_diagnostic_info const & ) noexcept = default;
-
-    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei ) noexcept:
-        error_info(ei)
-    {
-    }
-
-public:
-
-    template <class CharT, class Traits>
-    friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, verbose_diagnostic_info const & x )
-    {
-        os <<
-            "leaf::verbose_diagnostic_info requires #define BOOST_LEAF_CFG_DIAGNOSTICS 1\n"
-            "leaf::error_info: ";
-        x.print(os);
-        return os << '\n';
-    }
-};
-
-namespace leaf_detail
-{
     struct verbose_diagnostic_info_: verbose_diagnostic_info
     {
-        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei ) noexcept:
-            verbose_diagnostic_info(ei)
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, Tup const & tup ) noexcept:
+            verbose_diagnostic_info(ei, tup)
         {
         }
     };
-
-
     template <>
     struct handler_argument_traits<verbose_diagnostic_info const &>: handler_argument_always_available<void>
     {
         template <class Tup>
-        BOOST_LEAF_CONSTEXPR static verbose_diagnostic_info_ get( Tup const &, error_info const & ei ) noexcept
+        BOOST_LEAF_CONSTEXPR static verbose_diagnostic_info_ get( Tup const & tup, error_info const & ei ) noexcept
         {
-            return verbose_diagnostic_info_(ei);
+            return verbose_diagnostic_info_(ei, tup);
         }
     };
+#endif
 }
+
+#else
+
+using verbose_diagnostic_info = diagnostic_info;
 
 #endif
 
@@ -695,6 +701,21 @@ handle_error( error_id id, H && ... h )
 
 ////////////////////////////////////////
 
+namespace leaf_detail
+{
+    template <class T>
+    void unload_result( result<T> * r )
+    {
+        (void) r->unload();
+    }
+
+    void unload_result( void * )
+    {
+    }
+}
+
+////////////////////////////////////////
+
 #ifdef BOOST_LEAF_NO_EXCEPTIONS
 
 template <class TryBlock, class... H>
@@ -709,10 +730,11 @@ try_handle_all( TryBlock && try_block, H && ... h ) noexcept
         return std::move(r).value();
     else
     {
+        leaf_detail::unload_result(&r);
         error_id id = r.error();
         ctx.deactivate();
         using R = typename std::decay<decltype(std::declval<TryBlock>()().value())>::type;
-        return ctx.template handle_error<R>(id, std::forward<H>(h)...);
+        return ctx.template handle_error<R>(std::move(id), std::forward<H>(h)...);
     }
 }
 
@@ -728,12 +750,13 @@ try_handle_some( TryBlock && try_block, H && ... h ) noexcept
         return r;
     else
     {
+        leaf_detail::unload_result(&r);
         error_id id = r.error();
         ctx.deactivate();
         using R = typename std::decay<decltype(std::declval<TryBlock>()())>::type;
-        auto rr = ctx.template handle_error<R>(id, std::forward<H>(h)..., [&r]()->R { return std::move(r); });
+        auto rr = ctx.template handle_error<R>(std::move(id), std::forward<H>(h)..., [&r]()->R { return std::move(r); });
         if( !rr )
-            ctx.propagate(rr.error());
+            ctx.unload(rr.error());
         return rr;
     }
 }
@@ -763,37 +786,6 @@ namespace leaf_detail
         {
             return std::forward<TryBlock>(try_block)();
         }
-#if BOOST_LEAF_CFG_CAPTURE
-        catch( capturing_exception const & cap )
-        {
-            try
-            {
-                cap.unload_and_rethrow_original_exception();
-            }
-            catch( std::exception & ex )
-            {
-                ctx.deactivate();
-                error_info e(&ex);
-                return handle_error_<R>(ctx.tup(), e, std::forward<H>(h)...,
-                    [&]() -> R
-                    {
-                        ctx.propagate(e.error());
-                        throw;
-                    } );
-            }
-            catch(...)
-            {
-                ctx.deactivate();
-                error_info e(nullptr);
-                return handle_error_<R>(ctx.tup(), e, std::forward<H>(h)...,
-                    [&]() -> R
-                    {
-                        ctx.propagate(e.error());
-                        throw;
-                    } );
-            }
-        }
-#endif
         catch( std::exception & ex )
         {
             ctx.deactivate();
@@ -801,7 +793,7 @@ namespace leaf_detail
             return handle_error_<R>(ctx.tup(), e, std::forward<H>(h)...,
                 [&]() -> R
                 {
-                    ctx.propagate(e.error());
+                    ctx.unload(e.error());
                     throw;
                 } );
         }
@@ -812,7 +804,7 @@ namespace leaf_detail
             return handle_error_<R>(ctx.tup(), e, std::forward<H>(h)...,
                 [&]() -> R
                 {
-                    ctx.propagate(e.error());
+                    ctx.unload(e.error());
                     throw;
                 } );
         }
@@ -820,56 +812,51 @@ namespace leaf_detail
 }
 
 template <class TryBlock, class... H>
-BOOST_LEAF_CONSTEXPR inline
+inline
 typename std::decay<decltype(std::declval<TryBlock>()().value())>::type
 try_handle_all( TryBlock && try_block, H && ... h )
 {
-    static_assert(is_result_type<decltype(std::declval<TryBlock>()())>::value, "The return type of the try_block passed to a try_handle_all function must be registered with leaf::is_result_type");
+    static_assert(is_result_type<decltype(std::declval<TryBlock>()())>::value, "The return type of the try_block passed to try_handle_all must be registered with leaf::is_result_type");
     context_type_from_handlers<H...> ctx;
     auto active_context = activate_context(ctx);
-    if( auto r = leaf_detail::try_catch_(
-            ctx,
-            [&]
-            {
-                return std::forward<TryBlock>(try_block)();
-            },
-            std::forward<H>(h)...) )
+    if( auto r = leaf_detail::try_catch_(ctx, std::forward<TryBlock>(try_block), std::forward<H>(h)...) )
         return std::move(r).value();
     else
     {
+        BOOST_LEAF_ASSERT(ctx.is_active());
+        leaf_detail::unload_result(&r);
         error_id id = r.error();
-        if( ctx.is_active() )
-            ctx.deactivate();
+        ctx.deactivate();
         using R = typename std::decay<decltype(std::declval<TryBlock>()().value())>::type;
         return ctx.template handle_error<R>(std::move(id), std::forward<H>(h)...);
     }
 }
 
 template <class TryBlock, class... H>
-BOOST_LEAF_NODISCARD BOOST_LEAF_CONSTEXPR inline
+BOOST_LEAF_NODISCARD inline
 typename std::decay<decltype(std::declval<TryBlock>()())>::type
 try_handle_some( TryBlock && try_block, H && ... h )
 {
-    static_assert(is_result_type<decltype(std::declval<TryBlock>()())>::value, "The return type of the try_block passed to a try_handle_some function must be registered with leaf::is_result_type");
+    static_assert(is_result_type<decltype(std::declval<TryBlock>()())>::value, "The return type of the try_block passed to try_handle_some must be registered with leaf::is_result_type");
     context_type_from_handlers<H...> ctx;
     auto active_context = activate_context(ctx);
-    if( auto r = leaf_detail::try_catch_(
-            ctx,
-            [&]
-            {
-                return std::forward<TryBlock>(try_block)();
-            },
-            std::forward<H>(h)...) )
+    if( auto r = leaf_detail::try_catch_(ctx, std::forward<TryBlock>(try_block), std::forward<H>(h)...) )
+        return r;
+    else if( !ctx.is_active() )
         return r;
     else
     {
+        leaf_detail::unload_result(&r);
         error_id id = r.error();
-        if( ctx.is_active() )
-            ctx.deactivate();
+        ctx.deactivate();
         using R = typename std::decay<decltype(std::declval<TryBlock>()())>::type;
-        auto rr = ctx.template handle_error<R>(id, std::forward<H>(h)..., [&r]()->R { return std::move(r); });
+        auto rr = ctx.template handle_error<R>(std::move(id), std::forward<H>(h)...,
+            [&r]()->R
+            {
+                return std::move(r);
+            });
         if( !rr )
-            ctx.propagate(rr.error());
+            ctx.unload(rr.error());
         return rr;
     }
 }

@@ -1302,5 +1302,82 @@ int main()
         BOOST_TEST_EQ(r, 1);
     }
 
+    //////////////////////////////////////
+
+    // void, no exception caught, error handled
+    {
+        int handle_some_handler_called = 0;
+        leaf::result<void> r = leaf::try_handle_some(
+            []() -> leaf::result<void>
+            {
+                return leaf::new_error( info<0>{1} );
+            },
+            [&]( info<0> & x )
+            {
+                BOOST_TEST_EQ(x.value, 1);
+                ++handle_some_handler_called;
+            } );
+        BOOST_TEST(r);
+        BOOST_TEST_EQ(handle_some_handler_called, 1);
+    }
+
+    // void, no exception caught, error not handled
+    {
+        int handle_some_handler_called = 0;
+        leaf::result<void> r = leaf::try_handle_some(
+            []() -> leaf::result<void>
+            {
+                return leaf::new_error( info<0>{1} );
+            },
+            [&]( leaf::error_info const & e, info<0> & x ) -> leaf::result<void>
+            {
+                BOOST_TEST_EQ(x.value, 1);
+                ++handle_some_handler_called;
+                return e.error();
+            } );
+        BOOST_TEST(!r);
+        BOOST_TEST_EQ(handle_some_handler_called, 1);
+    }
+
+#ifndef BOOST_LEAF_NO_EXCEPTIONS
+    // void, exception caught, error handled
+    {
+        int handle_some_handler_called = 0;
+        leaf::result<void> r = leaf::try_handle_some(
+            []() -> leaf::result<void>
+            {
+                BOOST_LEAF_THROW_EXCEPTION( info<0>{1} );
+            },
+            [&]( info<0> & x ) -> leaf::result<void>
+            {
+                BOOST_TEST_EQ(x.value, 1);
+                ++handle_some_handler_called;
+                return { };
+            } );
+        BOOST_TEST(r);
+        BOOST_TEST_EQ(handle_some_handler_called, 1);
+    }
+#endif
+
+#ifndef BOOST_LEAF_NO_EXCEPTIONS
+    // void, exception caught, error not handled
+    {
+        int handle_some_handler_called = 0;
+        leaf::result<void> r = leaf::try_handle_some(
+            []() -> leaf::result<void>
+            {
+                BOOST_LEAF_THROW_EXCEPTION( info<0>{1} );
+            },
+            [&]( leaf::error_info const & e, info<0> & x ) -> leaf::result<void>
+            {
+                BOOST_TEST_EQ(x.value, 1);
+                ++handle_some_handler_called;
+                return e.error();
+            } );
+        BOOST_TEST(!r);
+        BOOST_TEST_EQ(handle_some_handler_called, 1);
+    }
+#endif
+
     return boost::report_errors();
 }

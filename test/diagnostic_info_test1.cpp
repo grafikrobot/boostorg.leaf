@@ -93,8 +93,6 @@ int main()
                 printable_info_non_printable_payload(),
                 non_printable_info_printable_payload(),
                 non_printable_info_non_printable_payload(),
-                unexpected_test<1>{1},
-                unexpected_test<2>{2},
                 enum_class_payload{},
                 leaf::e_errno{ENOENT} );
         },
@@ -133,8 +131,6 @@ int main()
                 printable_info_non_printable_payload(),
                 non_printable_info_printable_payload(),
                 non_printable_info_non_printable_payload(),
-                unexpected_test<1>{1},
-                unexpected_test<2>{2},
                 enum_class_payload{},
                 leaf::e_errno{ENOENT} );
         },
@@ -161,9 +157,6 @@ int main()
             BOOST_TEST_NE(s.find(": printed printable_payload"), s.npos);
             BOOST_TEST_NE(s.find(": {not printable}"), s.npos);
             BOOST_TEST_NE(s.find("enum_class_payload"), s.npos);
-            BOOST_TEST_NE(s.find("Detected 2 attempts"), s.npos);
-            BOOST_TEST_NE(s.find("unexpected_test<1>"), s.npos);
-            BOOST_TEST_EQ(s.find("unexpected_test<2>"), s.npos);
 #else
             BOOST_TEST_NE(s.find("leaf::diagnostic_info requires #define BOOST_LEAF_CFG_DIAGNOSTICS 1"), s.npos);
             BOOST_TEST_NE(s.find("leaf::error_info: Error ID = "), s.npos);
@@ -243,8 +236,6 @@ int main()
                 printable_info_non_printable_payload(),
                 non_printable_info_printable_payload(),
                 non_printable_info_non_printable_payload(),
-                unexpected_test<1>{1},
-                unexpected_test<2>{2},
                 enum_class_payload{},
                 leaf::e_errno{ENOENT} );
         },
@@ -282,8 +273,6 @@ int main()
                 non_printable_info_printable_payload(),
                 non_printable_info_non_printable_payload(),
                 enum_class_payload{},
-                unexpected_test<1>{1},
-                unexpected_test<2>{2},
                 leaf::e_errno{ENOENT} );
         },
         [](
@@ -311,9 +300,6 @@ int main()
             BOOST_TEST_NE(s.find(": printed printable_payload"), s.npos);
             BOOST_TEST_NE(s.find(": {not printable}"), s.npos);
             BOOST_TEST_NE(s.find("enum_class_payload"), s.npos);
-            BOOST_TEST_NE(s.find("Detected 2 attempts"), s.npos);
-            BOOST_TEST_NE(s.find("unexpected_test<1>"), s.npos);
-            BOOST_TEST_EQ(s.find("unexpected_test<2>"), s.npos);
 #else
             BOOST_TEST_NE(s.find("leaf::diagnostic_info requires #define BOOST_LEAF_CFG_DIAGNOSTICS 1"), s.npos);
             BOOST_TEST_NE(s.find("leaf::error_info: Error ID = "), s.npos);

@@ -7,8 +7,7 @@
 #   include "leaf.hpp"
 #else
 #   include <boost/leaf/result.hpp>
-#   include <boost/leaf/capture.hpp>
-#   include <boost/leaf/context.hpp>
+#   include <boost/leaf/handle_errors.hpp>
 #endif
 
 #if BOOST_LEAF_CFG_STD_STRING
@@ -94,22 +93,27 @@ int main()
 
 #if BOOST_LEAF_CFG_CAPTURE
     {
-    using context_type = leaf::leaf_detail::polymorphic_context_impl<leaf::context<e_err>>;
-        {
-            leaf::result<int> r = leaf::capture( std::make_shared<context_type>(), []{ return leaf::result<int>( leaf::new_error( e_err { } ) ); } );
+        leaf::result<int> r = leaf::try_handle_some(
+            []() -> leaf::result<int>
+            {
+                return leaf::new_error(e_err{ });
+            },
+            []( leaf::dynamic_capture const & cap ) -> leaf::result<int>
+            {
+                return cap;
+            } );
 #if BOOST_LEAF_CFG_STD_STRING
-            std::stringstream ss;
-            ss << r;
-            std::string s = ss.str();
-            std::cout << s << std::endl;
-            leaf::error_id err = r.error();
-            BOOST_TEST_NE(s.find("Error ID " + std::to_string(err.value())), s.npos);
+        std::stringstream ss;
+        ss << r;
+        std::string s = ss.str();
+        std::cout << s << std::endl;
+        leaf::error_id err = r.error();
+        BOOST_TEST_NE(s.find("Error ID " + std::to_string(err.value())), s.npos);
 #if BOOST_LEAF_CFG_DIAGNOSTICS
-            BOOST_TEST_NE(s.find("captured error objects"), s.npos);
-            BOOST_TEST_NE(s.find("e_err"), s.npos);
+        BOOST_TEST_NE(s.find("Captured error objects"), s.npos);
+        BOOST_TEST_NE(s.find("e_err"), s.npos);
 #endif
 #endif
-        }
     }
 #endif
 

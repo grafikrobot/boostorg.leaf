@@ -139,6 +139,7 @@ if option_enable_unit_tests
         'diagnostic_info_test3',
         'diagnostic_info_test4',
         'diagnostic_info_test5',
+        'dynamic_capture_print_test',
         'e_errno_test',
         'e_LastError_test',
         'error_code_test',
@@ -199,7 +200,6 @@ if option_enable_unit_tests
     endforeach
 
     header_tests = [
-        '_hpp_capture_test',
         '_hpp_common_test',
         '_hpp_config_test',
         '_hpp_context_test',
@@ -247,14 +247,14 @@ endif
 if option_enable_examples
 
     examples = [
-        'capture_in_result',
+        'dynamic_capture_result',
         'error_log',
         'error_trace',
         'print_half'
     ]
     if option_exceptions
         examples += [
-            'capture_in_exception',
+            'dynamic_capture_eh',
             'exception_to_result'
         ]
         if option_lua
@@ -264,7 +264,7 @@ if option_enable_examples
         endif
         if option_boost
             examples += [
-    #           'asio_beast_leaf_rpc' #FIXME
+               'asio_beast_leaf_rpc'
             ]
         endif
     endif

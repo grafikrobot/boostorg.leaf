@@ -62,9 +62,7 @@ int main()
             std::string s = ss.str();
             std::cout << s << std::endl;
 #if BOOST_LEAF_CFG_DIAGNOSTICS
-            BOOST_TEST(s.find("info<-42>")!=s.npos);
-#else
-            BOOST_TEST(s.find("BOOST_LEAF_CFG_DIAGNOSTICS")!=s.npos);
+            BOOST_TEST(s.find("info<42>")!=s.npos);
 #endif
 #endif
             return 1;

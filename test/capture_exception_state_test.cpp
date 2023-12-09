@@ -20,8 +20,8 @@ int main()
 #ifdef BOOST_LEAF_TEST_SINGLE_HEADER
 #   include "leaf.hpp"
 #else
-#   include <boost/leaf/capture.hpp>
 #   include <boost/leaf/handle_errors.hpp>
+#   include <boost/leaf/result.hpp>
 #   include <boost/leaf/exception.hpp>
 #endif
 
@@ -63,38 +63,23 @@ struct info
 
 int main()
 {
-    auto error_handlers = std::make_tuple(
-        []( info<1>, info<3> )
+    leaf::result<int> r = leaf::try_handle_some(
+        []() -> leaf::result<int>
         {
-            return 1;
+            leaf::throw_exception(info<1>{}, info<3>{});
         },
-        []
+        [](leaf::dynamic_capture const & cap) -> leaf::result<int>
         {
-            return 2;
+            BOOST_TEST(!cap.empty());
+            BOOST_TEST_EQ(cap.size(), 2);
+            return cap;
         } );
-    BOOST_TEST_EQ(count, 0);
-    std::exception_ptr ep;
-    leaf::context_ptr ctx = leaf::make_shared_context(error_handlers);
-    try
-    {
-        leaf::capture(
-            ctx,
-            []
-            {
-                leaf::throw_exception(info<1>{}, info<3>{});
-            } );
-        BOOST_TEST(false);
-    }
-    catch(...)
-    {
-        ep = std::current_exception();
-    }
     BOOST_TEST_EQ(count, 2);
 
 #if BOOST_LEAF_CFG_STD_STRING
     {
         std::ostringstream st;
-        st << *ctx;
+        st << r;
         std::string s = st.str();
         std::cout << s << std::endl;
 #if BOOST_LEAF_CFG_DIAGNOSTICS
@@ -104,14 +89,21 @@ int main()
     }
 #endif
 
-    int r = leaf::try_catch(
+    int ret = leaf::try_catch(
         [&]() -> int
         {
-            std::rethrow_exception(ep);
+            return r.value();
         },
-        error_handlers );
-    BOOST_TEST_EQ(r, 1);
-    ep = std::exception_ptr();
+        []( info<1>, info<3> )
+        {
+            return 1;
+        },
+        []
+        {
+            return 2;
+        } );
+    BOOST_TEST_EQ(ret, 1);
+    r = 0;
     BOOST_TEST_EQ(count, 0);
 
     return boost::report_errors();
