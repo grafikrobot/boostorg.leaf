@@ -182,7 +182,9 @@ namespace leaf_detail
 
 ////////////////////////////////////////
 
-#if BOOST_LEAF_CFG_DIAGNOSTICS && BOOST_LEAF_CFG_CAPTURE
+#if BOOST_LEAF_CFG_DIAGNOSTICS
+
+#if BOOST_LEAF_CFG_CAPTURE
 
 class verbose_diagnostic_info: public diagnostic_info
 {
@@ -239,6 +241,51 @@ protected:
 
     verbose_diagnostic_info( verbose_diagnostic_info const & ) noexcept = default;
 
+    template <class Tup>
+    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei, Tup const & tup ) noexcept:
+        diagnostic_info(ei, tup),
+    {
+    }
+
+    template <class CharT, class Traits>
+    friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, verbose_diagnostic_info const & x )
+    {
+        return os << "verbose_diagnostic_info not available due to BOOST_LEAF_CFG_CAPTURE=0. Basic diagnostic_info follows.\n" << static_cast<diagnostic_info const &>(x);
+    }
+};
+
+namespace leaf_detail
+{
+    struct verbose_diagnostic_info_: verbose_diagnostic_info
+    {
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, Tup const & tup, ) noexcept:
+            verbose_diagnostic_info(ei, tup)
+        {
+        }
+    };
+
+    template <>
+    struct handler_argument_traits<verbose_diagnostic_info const &>: handler_argument_always_available<void>
+    {
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR static verbose_diagnostic_info_ get( Tup const & tup, error_info const & ei ) noexcept
+        {
+            return verbose_diagnostic_info_(ei, tup);
+        }
+    };
+}
+
+#endif
+
+#else
+
+class verbose_diagnostic_info: public diagnostic_info
+{
+protected:
+
+    verbose_diagnostic_info( verbose_diagnostic_info const & ) noexcept = default;
+
     BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei ) noexcept:
         diagnostic_info(ei)
     {
@@ -247,7 +294,7 @@ protected:
     template <class CharT, class Traits>
     friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, verbose_diagnostic_info const & x )
     {
-        return os << "verbose_diagnostic_info not available due to BOOST_LEAF_CFG_DIAGNOSTICS=0 or BOOST_LEAF_CFG_CAPTURE=0. Basic error_info follows.\n" << static_cast<error_info const &>(x);
+        return os << "verbose_diagnostic_info not available due to BOOST_LEAF_CFG_DIAGNOSTICS=0. Basic error_info follows.\n" << static_cast<error_info const &>(x);
     }
 };
 
