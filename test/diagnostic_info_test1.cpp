@@ -106,7 +106,7 @@ int main()
             leaf::e_errno,
             leaf::error_info const & unmatched )
         {
-#if BOOST_LEAF_CFG_STD_STRING
+#if BOOST_LEAF_CFG_STD_STRINfG
             std::ostringstream st;
             st << unmatched;
             std::string s = st.str();
@@ -157,7 +157,7 @@ int main()
                 BOOST_TEST_NE(s.find("enum_class_payload"), s.npos);
             }
             else
-                BOOST_TEST_NE(s.find("diagnostic_info not available"), s.npos);
+                BOOST_TEST_NE(s.find("diagnostic_info not available due to BOOST_LEAF_CFG_DIAGNOSTICS=0"), s.npos);
 #endif
         },
         []()
@@ -203,15 +203,20 @@ int main()
                 BOOST_TEST_NE(s.find(": printed printable_payload"), s.npos);
                 BOOST_TEST_NE(s.find(": {not printable}"), s.npos);
                 BOOST_TEST_NE(s.find("enum_class"), s.npos);
-                BOOST_TEST_NE(s.find("Unhandled error objects:"), s.npos);
-                BOOST_TEST_NE(s.find("unexpected_test<1>"), s.npos);
-                BOOST_TEST_NE(s.find("unexpected_test<2>"), s.npos);
-                BOOST_TEST_NE(s.find(": 1"), s.npos);
-                BOOST_TEST_NE(s.find(": 2"), s.npos);
                 BOOST_TEST_EQ(s.find("dynamic_allocator"), s.npos);
+                if( BOOST_LEAF_CFG_CAPTURE )
+                {
+                    BOOST_TEST_NE(s.find("Unhandled error objects:"), s.npos);
+                    BOOST_TEST_NE(s.find("unexpected_test<1>"), s.npos);
+                    BOOST_TEST_NE(s.find("unexpected_test<2>"), s.npos);
+                    BOOST_TEST_NE(s.find(": 1"), s.npos);
+                    BOOST_TEST_NE(s.find(": 2"), s.npos);
+                }
+                else
+                    BOOST_TEST_NE(s.find("verbose_diagnostic_info not available due to BOOST_LEAF_CFG_CAPTURE=0"), s.npos);
             }
             else
-                BOOST_TEST_NE(s.find("verbose_diagnostic_info not available"), s.npos);
+                BOOST_TEST_NE(s.find("verbose_diagnostic_info not available due to BOOST_LEAF_CFG_DIAGNOSTICS=0"), s.npos);
 #endif
         },
         []()
@@ -342,15 +347,20 @@ int main()
                 BOOST_TEST_NE(s.find(": printed printable_payload"), s.npos);
                 BOOST_TEST_NE(s.find(": {not printable}"), s.npos);
                 BOOST_TEST_NE(s.find("enum_class_payload"), s.npos);
-                BOOST_TEST_NE(s.find("Unhandled error objects:"), s.npos);
-                BOOST_TEST_NE(s.find("unexpected_test<1>"), s.npos);
-                BOOST_TEST_NE(s.find("unexpected_test<2>"), s.npos);
-                BOOST_TEST_NE(s.find(": 1"), s.npos);
-                BOOST_TEST_NE(s.find(": 2"), s.npos);
                 BOOST_TEST_EQ(s.find("dynamic_allocator"), s.npos);
+                if( BOOST_LEAF_CFG_CAPTURE )
+                {
+                    BOOST_TEST_NE(s.find("Unhandled error objects:"), s.npos);
+                    BOOST_TEST_NE(s.find("unexpected_test<1>"), s.npos);
+                    BOOST_TEST_NE(s.find("unexpected_test<2>"), s.npos);
+                    BOOST_TEST_NE(s.find(": 1"), s.npos);
+                    BOOST_TEST_NE(s.find(": 2"), s.npos);
+                }
+                else
+                    BOOST_TEST_NE(s.find("verbose_diagnostic_info not available due to BOOST_LEAF_CFG_CAPTURE=0"), s.npos);
             }
             else
-                BOOST_TEST_NE(s.find("verbose_diagnostic_info not available"), s.npos);
+                BOOST_TEST_NE(s.find("verbose_diagnostic_info not available due to BOOST_LEAF_CFG_DIAGNOSTICS=0"), s.npos);
 #endif
         } );
 

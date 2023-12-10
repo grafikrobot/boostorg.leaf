@@ -200,6 +200,7 @@ namespace leaf_detail
                     else
                         os << '[' << k << "] ";
                     diagnostic<E>::print(os, value(k));
+                    os << '\n';
                 }
         }
 
