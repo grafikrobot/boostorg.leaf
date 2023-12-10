@@ -138,7 +138,7 @@ void not_called_on_purpose()
     test< std::tuple<info<1>,info<2>,info<3>> >( expd([]( info<1> const, info<2> ){ }, []( info<1> const *, info<3> ){ }) );
 
     test< std::tuple<info<1>,info<2>> >( expd([]( info<1>, info<2>, leaf::diagnostic_info const & ){ }, []( info<1>, info<2> ){ }) );
-#if BOOST_LEAF_CFG_DIAGNOSTICS
+#if BOOST_LEAF_CFG_DIAGNOSTICS && BOOST_LEAF_CFG_CAPTURE
     test< std::tuple<info<1>,info<2>,leaf::leaf_detail::dynamic_allocator> >( expd([]( info<1>, info<2>, leaf::verbose_diagnostic_info const & ){ }, []( info<1>, info<2> ){ }) );
 #else
     test< std::tuple<info<1>,info<2>> >( expd([]( info<1>, info<2> ){ }, []( info<1>, leaf::verbose_diagnostic_info const &, info<2> ){ }) );

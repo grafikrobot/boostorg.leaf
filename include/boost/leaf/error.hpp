@@ -804,17 +804,11 @@ class context_activator
     context_activator( context_activator const & ) = delete;
     context_activator & operator=( context_activator const & ) = delete;
 
-#if !defined(BOOST_LEAF_NO_EXCEPTIONS) && BOOST_LEAF_STD_UNCAUGHT_EXCEPTIONS
-    int const uncaught_exceptions_;
-#endif
     Ctx * ctx_;
 
 public:
 
     explicit BOOST_LEAF_CONSTEXPR BOOST_LEAF_ALWAYS_INLINE context_activator(Ctx & ctx) noexcept:
-#if !defined(BOOST_LEAF_NO_EXCEPTIONS) && BOOST_LEAF_STD_UNCAUGHT_EXCEPTIONS
-        uncaught_exceptions_(std::uncaught_exceptions()),
-#endif
         ctx_(ctx.is_active() ? nullptr : &ctx)
     {
         if( ctx_ )
@@ -822,9 +816,6 @@ public:
     }
 
     BOOST_LEAF_CONSTEXPR BOOST_LEAF_ALWAYS_INLINE context_activator( context_activator && x ) noexcept:
-#if !defined(BOOST_LEAF_NO_EXCEPTIONS) && BOOST_LEAF_STD_UNCAUGHT_EXCEPTIONS
-        uncaught_exceptions_(x.uncaught_exceptions_),
-#endif
         ctx_(x.ctx_)
     {
         x.ctx_ = nullptr;
