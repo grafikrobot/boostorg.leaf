@@ -33,7 +33,7 @@ int main()
                 BOOST_LEAF_CHECK(hidden_result());
                 return 0;
             },
-            []( my_info<1> x1, my_info<2> x2, leaf::diagnostic_info const & info, leaf::verbose_diagnostic_info const & vinfo )
+            []( my_info<1> x1, my_info<2> x2, leaf::verbose_diagnostic_info const & info, leaf::verbose_diagnostic_info const & vinfo )
             {
                 BOOST_TEST_EQ(x1.value, 1);
                 BOOST_TEST_EQ(x2.value, 2);
@@ -43,7 +43,8 @@ int main()
                     std::ostringstream ss; ss << vinfo;
                     std::string s = ss.str();
                     std::cout << s << std::endl;
-                    BOOST_TEST_NE(s.find("Test my_info<3>::value = 3"), std::string::npos);
+                    if( BOOST_LEAF_CFG_DIAGNOSTICS && BOOST_LEAF_CFG_CAPTURE )
+                        BOOST_TEST_NE(s.find("Test my_info<3>::value = 3"), std::string::npos);
 #endif
                 }
                 return 1;
@@ -63,7 +64,7 @@ int main()
                 hidden_throw();
                 return 0;
             },
-            []( my_info<1> x1, my_info<2> x2, leaf::diagnostic_info const & info, leaf::verbose_diagnostic_info const & vinfo )
+            []( my_info<1> x1, my_info<2> x2, leaf::verbose_diagnostic_info const & info, leaf::verbose_diagnostic_info const & vinfo )
             {
                 BOOST_TEST_EQ(x1.value, 1);
                 BOOST_TEST_EQ(x2.value, 2);
@@ -73,7 +74,8 @@ int main()
                     std::ostringstream ss; ss << vinfo;
                     std::string s = ss.str();
                     std::cout << s << std::endl;
-                    BOOST_TEST_NE(s.find("Test my_info<3>::value = 3"), std::string::npos);
+                    if( BOOST_LEAF_CFG_DIAGNOSTICS && BOOST_LEAF_CFG_CAPTURE )
+                        BOOST_TEST_NE(s.find("Test my_info<3>::value = 3"), std::string::npos);
 #endif
                 }
                 return 1;
