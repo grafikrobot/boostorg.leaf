@@ -12,7 +12,7 @@
 namespace boost { namespace leaf {
 
 template <class T>
-class result;
+class BOOST_LEAF_SYMBOL_VISIBLE BOOST_LEAF_NODISCARD result;
 
 ////////////////////////////////////////
 

@@ -71,7 +71,7 @@ namespace boost { namespace leaf {
 class BOOST_LEAF_SYMBOL_VISIBLE error_id;
 
 template <class T>
-class BOOST_LEAF_SYMBOL_VISIBLE result;
+class BOOST_LEAF_SYMBOL_VISIBLE BOOST_LEAF_NODISCARD result;
 
 namespace leaf_detail
 {

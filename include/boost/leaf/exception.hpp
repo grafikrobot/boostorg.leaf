@@ -223,7 +223,7 @@ template <class... E>
 #ifndef BOOST_LEAF_NO_EXCEPTIONS
 
 template <class T>
-class result;
+class BOOST_LEAF_SYMBOL_VISIBLE BOOST_LEAF_NODISCARD result;
 
 namespace leaf_detail
 {
