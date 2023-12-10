@@ -243,7 +243,7 @@ protected:
 
     template <class Tup>
     BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei, Tup const & tup ) noexcept:
-        diagnostic_info(ei, tup),
+        diagnostic_info(ei, tup)
     {
     }
 
