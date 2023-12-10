@@ -14,6 +14,8 @@ namespace boost { namespace leaf {
 template <class T>
 class result;
 
+////////////////////////////////////////
+
 class BOOST_LEAF_SYMBOL_VISIBLE error_info
 {
     error_info & operator=( error_info const & ) = delete;
@@ -34,20 +36,6 @@ class BOOST_LEAF_SYMBOL_VISIBLE error_info
 protected:
 
     error_info( error_info const & ) noexcept = default;
-
-    template <class CharT, class Traits>
-    void print( std::basic_ostream<CharT, Traits> & os ) const
-    {
-        os << "Error ID = " << err_id_.value();
-#ifndef BOOST_LEAF_NO_EXCEPTIONS
-        if( ex_ )
-        {
-            os <<
-                "\nException dynamic type: " << leaf_detail::demangle(typeid(*ex_).name()) <<
-                "\nstd::exception::what(): " << ex_->what();
-        }
-#endif
-    }
 
 public:
 
@@ -84,18 +72,27 @@ public:
     template <class CharT, class Traits>
     friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, error_info const & x )
     {
-        os << "leaf::error_info: ";
-        x.print(os);
+        os << "Error ID: " << x.err_id_.value();
+#ifndef BOOST_LEAF_NO_EXCEPTIONS
+        if( x.ex_ )
+        {
+            os <<
+                "\nException dynamic type: " << leaf_detail::demangle(typeid(*x.ex_).name()) <<
+                "\nstd::exception::what(): " << x.ex_->what();
+        }
+#endif
         return os << '\n';
     }
 };
 
 ////////////////////////////////////////
 
+#if BOOST_LEAF_CFG_DIAGNOSTICS
+
 class diagnostic_info: public error_info
 {
     void const * tup_;
-    void (*print_)( std::ostream &, void const * tup, int err_id_to_print );
+    void (*print_context_content_)( std::ostream &, void const * tup, int err_id_to_print );
 
 protected:
 
@@ -105,19 +102,15 @@ protected:
     BOOST_LEAF_CONSTEXPR diagnostic_info( error_info const & ei, Tup const & tup ) noexcept:
         error_info(ei),
         tup_(&tup),
-        print_(&leaf_detail::tuple_for_each<std::tuple_size<Tup>::value, Tup>::print)
+        print_context_content_(&leaf_detail::tuple_for_each<std::tuple_size<Tup>::value, Tup>::print)
     {
     }
-
-public:
 
     template <class CharT, class Traits>
     friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, diagnostic_info const & x )
     {
-        os << "leaf::diagnostic_info for ";
-        x.print(os);
-        os << ":\n";
-        x.print_(os, x.tup_, x.error().value());
+        os << static_cast<error_info const &>(x);
+        x.print_context_content_(os, x.tup_, x.error().value());
         return os;
     }
 };
@@ -143,6 +136,143 @@ namespace leaf_detail
         }
     };
 }
+
+#else
+
+class diagnostic_info: public error_info
+{
+protected:
+
+    diagnostic_info( diagnostic_info const & ) noexcept = default;
+
+    BOOST_LEAF_CONSTEXPR diagnostic_info( error_info const & ei ) noexcept:
+        error_info(ei)
+    {
+    }
+
+    template <class CharT, class Traits>
+    friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, diagnostic_info const & x )
+    {
+        return os << "diagnostic_info not available due to BOOST_LEAF_CFG_DIAGNOSTICS=0. Basic error_info follows.\n" << static_cast<error_info const &>(x);
+    }
+};
+
+namespace leaf_detail
+{
+    struct diagnostic_info_: diagnostic_info
+    {
+        BOOST_LEAF_CONSTEXPR diagnostic_info_( error_info const & ei ) noexcept:
+            diagnostic_info(ei)
+        {
+        }
+    };
+
+    template <>
+    struct handler_argument_traits<diagnostic_info const &>: handler_argument_always_available<void>
+    {
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR static diagnostic_info_ get( Tup const &, error_info const & ei ) noexcept
+        {
+            return diagnostic_info_(ei);
+        }
+    };
+}
+
+#endif
+
+////////////////////////////////////////
+
+#if BOOST_LEAF_CFG_DIAGNOSTICS && BOOST_LEAF_CFG_CAPTURE
+
+class verbose_diagnostic_info: public diagnostic_info
+{
+    leaf_detail::dynamic_allocator const * const da_;
+
+protected:
+
+    verbose_diagnostic_info( verbose_diagnostic_info const & ) noexcept = default;
+
+    template <class Tup>
+    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei, Tup const & tup, leaf_detail::dynamic_allocator const * da ) noexcept:
+        diagnostic_info(ei, tup),
+        da_(da)
+    {
+    }
+
+    template <class CharT, class Traits>
+    friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, verbose_diagnostic_info const & x )
+    {
+        os << static_cast<diagnostic_info const &>(x);
+        if( x.da_ )
+            x.da_->print(os, "Unhandled error objects:\n", x.error().value());
+        return os;
+    }
+};
+
+namespace leaf_detail
+{
+    struct verbose_diagnostic_info_: verbose_diagnostic_info
+    {
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, Tup const & tup, dynamic_allocator const * da ) noexcept:
+            verbose_diagnostic_info(ei, tup, da)
+        {
+        }
+    };
+
+    template <>
+    struct handler_argument_traits<verbose_diagnostic_info const &>: handler_argument_always_available<dynamic_allocator>
+    {
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR static verbose_diagnostic_info_ get( Tup const & tup, error_info const & ei ) noexcept
+        {
+            return verbose_diagnostic_info_(ei, tup, handler_argument_traits_defaults<dynamic_allocator>::check(tup, ei));
+        }
+    };
+}
+
+#else
+
+class verbose_diagnostic_info: public diagnostic_info
+{
+protected:
+
+    verbose_diagnostic_info( verbose_diagnostic_info const & ) noexcept = default;
+
+    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei ) noexcept:
+        diagnostic_info(ei)
+    {
+    }
+
+    template <class CharT, class Traits>
+    friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, verbose_diagnostic_info const & x )
+    {
+        return os << "verbose_diagnostic_info not available due to BOOST_LEAF_CFG_DIAGNOSTICS=0 or BOOST_LEAF_CFG_CAPTURE=0. Basic error_info follows.\n" << static_cast<error_info const &>(x);
+    }
+};
+
+namespace leaf_detail
+{
+    struct verbose_diagnostic_info_: verbose_diagnostic_info
+    {
+        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei ) noexcept:
+            verbose_diagnostic_info(ei)
+        {
+        }
+    };
+
+    template <>
+    struct handler_argument_traits<verbose_diagnostic_info const &>: handler_argument_always_available<void>
+    {
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR static verbose_diagnostic_info_ get( Tup const &, error_info const & ei ) noexcept
+        {
+            return verbose_diagnostic_info_(ei);
+        }
+    };
+}
+
+#endif
 
 ////////////////////////////////////////
 
@@ -219,106 +349,6 @@ namespace leaf_detail
         }
     };
 }
-
-#endif
-
-////////////////////////////////////////
-
-#if BOOST_LEAF_CFG_DIAGNOSTICS
-
-class verbose_diagnostic_info: public error_info
-{
-    void const * const tup_;
-#if BOOST_LEAF_CFG_CAPTURE
-    leaf_detail::dynamic_allocator const * const da_;
-#endif
-    void (* const print_)( std::ostream &, void const * tup, int err_id_to_print );
-
-protected:
-
-    verbose_diagnostic_info( verbose_diagnostic_info const & ) noexcept = default;
-
-#if BOOST_LEAF_CFG_CAPTURE
-    template <class Tup>
-    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei, Tup const & tup, leaf_detail::dynamic_allocator const * da ) noexcept:
-        error_info(ei),
-        tup_(&tup),
-        da_(da),
-        print_(&leaf_detail::tuple_for_each<std::tuple_size<Tup>::value, Tup>::print)
-    {
-    }
-#else
-    template <class Tup>
-    BOOST_LEAF_CONSTEXPR verbose_diagnostic_info( error_info const & ei, Tup const & tup ) noexcept:
-        error_info(ei),
-        tup_(&tup),
-        print_(&leaf_detail::tuple_for_each<std::tuple_size<Tup>::value, Tup>::print)
-    {
-    }
-#endif
-
-public:
-
-    template <class CharT, class Traits>
-    friend std::ostream & operator<<( std::basic_ostream<CharT, Traits> & os, verbose_diagnostic_info const & x )
-    {
-        os << "leaf::verbose_diagnostic_info for ";
-        error_id err = x.error();
-        x.print(os);
-        os << ":\n";
-        x.print_(os, x.tup_, err.value());
-#if BOOST_LEAF_CFG_CAPTURE
-        if( x.da_ )
-            x.da_->print(os, "Unhandled error objects:\n", x.error().value());
-#endif
-        return os;
-    }
-};
-
-namespace leaf_detail
-{
-#if BOOST_LEAF_CFG_CAPTURE
-    struct verbose_diagnostic_info_: verbose_diagnostic_info
-    {
-        template <class Tup>
-        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, Tup const & tup, dynamic_allocator const * da ) noexcept:
-            verbose_diagnostic_info(ei, tup, da)
-        {
-        }
-    };
-    template <>
-    struct handler_argument_traits<verbose_diagnostic_info const &>: handler_argument_always_available<dynamic_allocator>
-    {
-        template <class Tup>
-        BOOST_LEAF_CONSTEXPR static verbose_diagnostic_info_ get( Tup const & tup, error_info const & ei ) noexcept
-        {
-            return verbose_diagnostic_info_(ei, tup, handler_argument_traits_defaults<dynamic_allocator>::check(tup, ei));
-        }
-    };
-#else
-    struct verbose_diagnostic_info_: verbose_diagnostic_info
-    {
-        template <class Tup>
-        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, Tup const & tup ) noexcept:
-            verbose_diagnostic_info(ei, tup)
-        {
-        }
-    };
-    template <>
-    struct handler_argument_traits<verbose_diagnostic_info const &>: handler_argument_always_available<void>
-    {
-        template <class Tup>
-        BOOST_LEAF_CONSTEXPR static verbose_diagnostic_info_ get( Tup const & tup, error_info const & ei ) noexcept
-        {
-            return verbose_diagnostic_info_(ei, tup);
-        }
-    };
-#endif
-}
-
-#else
-
-using verbose_diagnostic_info = diagnostic_info;
 
 #endif
 

@@ -59,9 +59,8 @@ int main()
             st << di;
             std::string s = st.str();
             std::cout << s << std::endl;
-#if BOOST_LEAF_CFG_DIAGNOSTICS
-            BOOST_TEST_NE(s.find("info<2>"), s.npos);
-#endif
+            if( BOOST_LEAF_CFG_DIAGNOSTICS )
+                BOOST_TEST_NE(s.find("info<2>"), s.npos);
 #endif
         } );
 
@@ -96,9 +95,8 @@ int main()
             st << di;
             std::string s = st.str();
             std::cout << s << std::endl;
-#if BOOST_LEAF_CFG_DIAGNOSTICS
-            BOOST_TEST_NE(s.find("info<2>"), s.npos);
-#endif
+            if( BOOST_LEAF_CFG_DIAGNOSTICS )
+                BOOST_TEST_NE(s.find("info<2>"), s.npos);
 #endif
         } );
 
@@ -133,9 +131,8 @@ int main()
             st << di;
             std::string s = st.str();
             std::cout << s << std::endl;
-#if BOOST_LEAF_CFG_DIAGNOSTICS
-            BOOST_TEST_NE(s.find("info<2>"), s.npos);
-#endif
+            if( BOOST_LEAF_CFG_DIAGNOSTICS )
+                BOOST_TEST_NE(s.find("info<2>"), s.npos);
 #endif
         } );
 

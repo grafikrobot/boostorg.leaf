@@ -189,7 +189,6 @@ namespace leaf_detail
         template <class CharT, class Traits>
         void print( std::basic_ostream<CharT, Traits> & os, int err_id_to_print ) const
         {
-#if BOOST_LEAF_CFG_DIAGNOSTICS
             if( !diagnostic<E>::is_invisible )
                 if( int k = this->key() )
                 {
@@ -201,12 +200,7 @@ namespace leaf_detail
                     else
                         os << '[' << k << "] ";
                     diagnostic<E>::print(os, value(k));
-                    (os << '\n').flush();
                 }
-#else
-            (void) os;
-            (void) err_id_to_print;
-#endif
         }
 
         using impl::load;
@@ -398,6 +392,17 @@ namespace leaf_detail
 
         using capture_list::unload;
         using capture_list::print;
+    };
+
+    template <>
+    struct diagnostic<dynamic_allocator, false, false, false>
+    {
+        static constexpr bool is_invisible = true;
+
+        template <class CharT, class Traits>
+        BOOST_LEAF_CONSTEXPR static void print( std::basic_ostream<CharT, Traits> &, dynamic_allocator const & )
+        {
+        }
     };
 
     template <>

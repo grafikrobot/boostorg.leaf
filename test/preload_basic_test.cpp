@@ -11,11 +11,6 @@
 #   include <boost/leaf/result.hpp>
 #endif
 
-#if BOOST_LEAF_CFG_STD_STRING
-#   include <sstream>
-#   include <iostream>
-#endif
-
 #include "lightweight_test.hpp"
 
 namespace leaf = boost::leaf;
@@ -43,12 +38,6 @@ void test( G && g )
         []( info<42> const & i42, leaf::diagnostic_info const & di )
         {
             BOOST_TEST_EQ(i42.value, 42);
-#if BOOST_LEAF_CFG_STD_STRING
-            std::stringstream ss;
-            ss << di;
-            std::string s = ss.str();
-            std::cout << s << std::endl;
-#endif
             return 1;
         },
         []

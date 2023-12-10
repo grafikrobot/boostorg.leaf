@@ -82,10 +82,11 @@ int main()
         st << r;
         std::string s = st.str();
         std::cout << s << std::endl;
-#if BOOST_LEAF_CFG_DIAGNOSTICS
-        BOOST_TEST_NE(s.find("info<1> instance"), s.npos);
-        BOOST_TEST_NE(s.find("info<3> instance"), s.npos);
-#endif
+        if( BOOST_LEAF_CFG_DIAGNOSTICS )
+        {
+            BOOST_TEST_NE(s.find("info<1> instance"), s.npos);
+            BOOST_TEST_NE(s.find("info<3> instance"), s.npos);
+        }
     }
 #endif
 

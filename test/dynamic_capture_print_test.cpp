@@ -48,21 +48,20 @@ struct e_err
 
 int main()
 {
-    std::string s;
-    (void) leaf::try_handle_all(
+    leaf::try_handle_all(
         []() -> leaf::result<void>
         {
             return leaf::new_error(e_err{ });
         },
         [&]( leaf::dynamic_capture const & cap )
         {
-            std::stringstream ss;
-            ss << cap;
-            s = ss.str();
+            std::ostringstream st;
+            st << cap;
+            std::string s = st.str();
+            std::cout << s << std::endl;
+            BOOST_TEST_NE(s.find("Captured error objects"), s.npos);
+            BOOST_TEST_NE(s.find("e_err"), s.npos);
         } );
-    std::cout << s << std::endl;
-    BOOST_TEST_NE(s.find("Captured error objects"), s.npos);
-    BOOST_TEST_NE(s.find("e_err"), s.npos);
 
     return boost::report_errors();
 }
