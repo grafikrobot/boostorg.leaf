@@ -94,7 +94,7 @@ int main()
             st << di;
             std::string s = st.str();
             std::cout << s << std::endl;
-            if( BOOST_LEAF_CFG_DIAGNOSTICS )
+            if( BOOST_LEAF_CFG_DIAGNOSTICS && BOOST_LEAF_CFG_CAPTURE )
             {
                 auto const n1 = s.find("info<1>: acc=0");
                 auto const n2 = s.find("info<2>: acc=0");
