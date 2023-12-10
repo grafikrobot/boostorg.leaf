@@ -12,7 +12,7 @@
 namespace boost { namespace leaf {
 
 template <class T>
-class BOOST_LEAF_SYMBOL_VISIBLE BOOST_LEAF_NODISCARD result;
+class BOOST_LEAF_SYMBOL_VISIBLE result;
 
 ////////////////////////////////////////
 
@@ -829,7 +829,7 @@ try_handle_all( TryBlock && try_block, H && ... h ) noexcept
 }
 
 template <class TryBlock, class... H>
-BOOST_LEAF_NODISCARD BOOST_LEAF_CONSTEXPR inline
+BOOST_LEAF_ATTRIBUTE_NODISCARD BOOST_LEAF_CONSTEXPR inline
 typename std::decay<decltype(std::declval<TryBlock>()())>::type
 try_handle_some( TryBlock && try_block, H && ... h ) noexcept
 {
@@ -923,7 +923,7 @@ try_handle_all( TryBlock && try_block, H && ... h )
 }
 
 template <class TryBlock, class... H>
-BOOST_LEAF_NODISCARD inline
+BOOST_LEAF_ATTRIBUTE_NODISCARD inline
 typename std::decay<decltype(std::declval<TryBlock>()())>::type
 try_handle_some( TryBlock && try_block, H && ... h )
 {

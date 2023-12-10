@@ -209,17 +209,18 @@
 
 ////////////////////////////////////////
 
-#ifndef BOOST_LEAF_NODISCARD
-#   if defined(__has_cpp_attribute)
-#       if __has_cpp_attribute(nodiscard)
-#           if __cplusplus >= 201703L
-#               define BOOST_LEAF_NODISCARD [[nodiscard]]
-#           endif
-#       endif
+#if defined(__has_attribute) && defined(__SUNPRO_CC) && (__SUNPRO_CC > 0x5130)
+#   if __has_attribute(nodiscard)
+#       define BOOST_LEAF_ATTRIBUTE_NODISCARD [[nodiscard]]
+#   endif
+#elif defined(__has_cpp_attribute)
+    //clang-6 accepts [[nodiscard]] with -std=c++14, but warns about it -pedantic
+#   if __has_cpp_attribute(nodiscard) && !(defined(__clang__) && (__cplusplus < 201703L)) && !(defined(__GNUC__) && (__cplusplus < 201100))
+#       define BOOST_LEAF_ATTRIBUTE_NODISCARD [[nodiscard]]
 #   endif
 #endif
-#ifndef BOOST_LEAF_NODISCARD
-#   define BOOST_LEAF_NODISCARD
+#ifndef BOOST_LEAF_ATTRIBUTE_NODISCARD
+#   define BOOST_LEAF_ATTRIBUTE_NODISCARD
 #endif
 
 ////////////////////////////////////////
