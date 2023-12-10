@@ -259,7 +259,7 @@ namespace leaf_detail
     struct verbose_diagnostic_info_: verbose_diagnostic_info
     {
         template <class Tup>
-        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, Tup const & tup, ) noexcept:
+        BOOST_LEAF_CONSTEXPR verbose_diagnostic_info_( error_info const & ei, Tup const & tup ) noexcept:
             verbose_diagnostic_info(ei, tup)
         {
         }
