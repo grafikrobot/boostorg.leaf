@@ -78,7 +78,7 @@ namespace tls
         template <class T>
         static BOOST_LEAF_CFG_TLS_INDEX_TYPE next() noexcept
         {
-            return next_(); // Set breakpoint here to monitor TLS intex allocation for T.
+            return next_(); // Set breakpoint here to monitor TLS index allocation for T.
         }
     };
 

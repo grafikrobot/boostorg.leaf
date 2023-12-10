@@ -85,6 +85,19 @@ public:
     }
 };
 
+namespace leaf_detail
+{
+    template <>
+    struct handler_argument_traits<error_info const &>: handler_argument_always_available<void>
+    {
+        template <class Tup>
+        BOOST_LEAF_CONSTEXPR static error_info const & get( Tup const &, error_info const & ei ) noexcept
+        {
+            return ei;
+        }
+    };
+}
+
 ////////////////////////////////////////
 
 #if BOOST_LEAF_CFG_DIAGNOSTICS
