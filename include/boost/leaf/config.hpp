@@ -210,11 +210,16 @@
 ////////////////////////////////////////
 
 #ifndef BOOST_LEAF_NODISCARD
-#   if __cplusplus >= 201703L
-#       define BOOST_LEAF_NODISCARD [[nodiscard]]
-#   else
-#       define BOOST_LEAF_NODISCARD
+#   if defined(__has_cpp_attribute)
+#       if __has_cpp_attribute(nodiscard)
+#           if __cplusplus >= 201703L
+#               define BOOST_LEAF_NODISCARD [[nodiscard]]
+#           endif
+#       endif
 #   endif
+#endif
+#ifndef BOOST_LEAF_NODISCARD
+#   define BOOST_LEAF_NODISCARD
 #endif
 
 ////////////////////////////////////////
