@@ -321,7 +321,7 @@ namespace leaf_detail
 
     public:
 
-        BOOST_LEAF_CONSTEXPR dynamic_allocator() noexcept:
+        dynamic_allocator() noexcept:
             capture_list(nullptr),
             err_id_(0),
             last_(&first_)
@@ -329,7 +329,7 @@ namespace leaf_detail
             BOOST_LEAF_ASSERT(first_ == nullptr);
         }
 
-        BOOST_LEAF_CONSTEXPR dynamic_allocator( dynamic_allocator && other ) noexcept:
+        dynamic_allocator( dynamic_allocator && other ) noexcept:
             capture_list(std::move(other)),
             err_id_(other.err_id_),
             last_(other.last_ == &other.first_? &first_ : other.last_)
@@ -341,7 +341,7 @@ namespace leaf_detail
         }
 
         template <class E>
-        BOOST_LEAF_CONSTEXPR typename std::decay<E>::type & dynamic_load(int err_id, E && e)
+        typename std::decay<E>::type & dynamic_load(int err_id, E && e)
         {
             using T = typename std::decay<E>::type;
             BOOST_LEAF_ASSERT(last_ != nullptr);
@@ -353,7 +353,7 @@ namespace leaf_detail
             return csn->value(err_id);
         }
 
-        BOOST_LEAF_CONSTEXPR void deactivate() const noexcept
+        void deactivate() const noexcept
         {
             for_each(
                 []( capture_list::node const & n )
@@ -362,12 +362,12 @@ namespace leaf_detail
                 } );
         }
 
-        BOOST_LEAF_CONSTEXPR bool empty() const noexcept
+        bool empty() const noexcept
         {
             return last_ == &first_;
         }
 
-        BOOST_LEAF_CONSTEXPR int size() const noexcept
+        int size() const noexcept
         {
             int n = 0;
             for_each(
