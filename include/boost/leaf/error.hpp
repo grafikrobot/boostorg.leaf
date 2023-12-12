@@ -337,7 +337,7 @@ namespace leaf_detail
             BOOST_LEAF_ASSERT(last_ != nullptr);
             BOOST_LEAF_ASSERT(*last_ == nullptr);
             BOOST_LEAF_ASSERT(other.first_ == nullptr);
-            other.last_ = nullptr;
+            other.last_ = &other.first_;
         }
 
         template <class E>
@@ -364,18 +364,19 @@ namespace leaf_detail
 
         bool empty() const noexcept
         {
-            return last_ == &first_;
+            BOOST_LEAF_ASSERT(first_ != nullptr || last_ == &first_);
+            return first_ != nullptr;
         }
 
         int size() const noexcept
         {
-            int n = 0;
+            int c = 0;
             for_each(
                 [&]( capture_list::node const & )
                 {
-                    ++n;
+                    ++c;
                 } );
-            return n;
+            return c;
         }
 
         template <class T>

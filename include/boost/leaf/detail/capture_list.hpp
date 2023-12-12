@@ -49,25 +49,13 @@ namespace leaf_detail
                 *last = this;
                 last = &next_;
             }
-        };
-        node * first_;
+        } * first_;
 
         template <class F>
         BOOST_LEAF_CONSTEXPR void for_each( F f ) const
         {
             for( node * p=first_; p; p=p->next_ )
                 f(*p);
-        }
-
-        void clear() noexcept
-        {
-            for( node const * p = first_; p; )
-            {
-                node const * n = p -> next_;
-                delete p;
-                p = n;
-            }
-            first_ = nullptr;
         }
 
     public:
@@ -85,18 +73,24 @@ namespace leaf_detail
 
         ~capture_list() noexcept
         {
-            clear();
+            for( node const * p = first_; p; )
+            {
+                node const * n = p -> next_;
+                delete p;
+                p = n;
+            }
         }
 
         void unload( int const err_id )
         {
+            capture_list moved(first_);
+            first_ = nullptr;
             tls::write_uint<leaf_detail::tls_tag_id_factory_current_id>(unsigned(err_id));
-            for_each(
+            moved.for_each(
                 [err_id]( node & n )
                 {
-                    n.unload(err_id);
+                    n.unload(err_id); // last node may throw
                 } );
-            clear();
         }
 
         template <class CharT, class Traits>
