@@ -81,6 +81,11 @@ namespace leaf_detail
             }
         }
 
+        BOOST_LEAF_CONSTEXPR bool empty() const noexcept
+        {
+            return first_ == nullptr;
+        }
+
         void unload( int const err_id )
         {
             capture_list moved(first_);

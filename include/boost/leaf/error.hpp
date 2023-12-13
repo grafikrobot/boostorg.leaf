@@ -362,12 +362,6 @@ namespace leaf_detail
                 } );
         }
 
-        bool empty() const noexcept
-        {
-            BOOST_LEAF_ASSERT(first_ != nullptr || last_ == &first_);
-            return first_ != nullptr;
-        }
-
         int size() const noexcept
         {
             int c = 0;
@@ -392,6 +386,7 @@ namespace leaf_detail
             return { err_id_, capture_list(f) };
         }
 
+        using capture_list::empty;
         using capture_list::unload;
         using capture_list::print;
     };
