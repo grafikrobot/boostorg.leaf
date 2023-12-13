@@ -81,7 +81,7 @@ namespace leaf_detail
             }
         }
 
-        BOOST_LEAF_CONSTEXPR bool empty() const noexcept
+        bool empty() const noexcept
         {
             return first_ == nullptr;
         }
