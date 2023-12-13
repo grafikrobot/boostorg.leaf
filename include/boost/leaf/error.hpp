@@ -722,7 +722,7 @@ public:
     {
         if( int err_id = value() )
         {
-            int const unused[ ] = { 42, leaf_detail::load_item<Item>::load_(err_id, std::forward<Item>(item))... };
+            int const unused[] = { 42, leaf_detail::load_item<Item>::load_(err_id, std::forward<Item>(item))... };
             (void) unused;
         }
         return *this;
