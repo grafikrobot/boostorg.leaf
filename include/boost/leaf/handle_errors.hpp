@@ -932,9 +932,7 @@ try_handle_some( TryBlock && try_block, H && ... h )
     auto active_context = activate_context(ctx);
     if( auto r = leaf_detail::try_catch_(ctx, std::forward<TryBlock>(try_block), std::forward<H>(h)...) )
         return r;
-    else if( !ctx.is_active() )
-        return r;
-    else
+    else if( ctx.is_active() )
     {
         leaf_detail::unload_result(&r);
         error_id id = r.error();
@@ -948,6 +946,11 @@ try_handle_some( TryBlock && try_block, H && ... h )
         if( !rr )
             ctx.unload(rr.error());
         return rr;
+    }
+    else
+    {
+        ctx.unload(r.error());
+        return r;
     }
 }
 
