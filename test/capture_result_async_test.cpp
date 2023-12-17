@@ -75,8 +75,18 @@ int main()
 {
     int const task_count = 100;
     int received_a, received_b;
+
+    auto task =
+        []( int a, int b, int res ) -> leaf::result<int>
+        {
+            if( res >= 0 )
+                return res;
+            else
+                return leaf::new_error( info<1>{a}, info<2>{b}, info<3>{} );
+        };
+
     auto error_handlers = std::make_tuple(
-        [&received_a, &received_b]( info<1> const & x1, info<2> const & x2, info<4> const & )
+        [&]( info<1> const & x1, info<2> const & x2, info<4> const & )
         {
             received_a = x1.value;
             received_b = x2.value;
@@ -88,19 +98,12 @@ int main()
         } );
 
     {
-        std::vector<fut_info> fut = launch_tasks(
-            task_count,
-            []( int a, int b, int res ) -> leaf::result<int>
-            {
-                if( res >= 0 )
-                    return res;
-                else
-                    return leaf::new_error( info<1>{a}, info<2>{b}, info<3>{} );
-            } );
+        std::vector<fut_info> fut = launch_tasks(task_count, task);
 
         for( auto & f : fut )
         {
             f.fut.wait();
+            received_a = received_b = 0;
             int r = leaf::try_handle_all(
                 [&]
                 {
@@ -122,19 +125,12 @@ int main()
     }
 
     {
-        std::vector<fut_info> fut = launch_tasks(
-            task_count,
-            []( int a, int b, int res ) -> leaf::result<int>
-            {
-                if( res >= 0 )
-                    return res;
-                else
-                    return leaf::new_error( info<1>{a}, info<2>{b}, info<3>{} );
-            } );
+        std::vector<fut_info> fut = launch_tasks(task_count, task);
 
         for( auto & f : fut )
         {
             f.fut.wait();
+            received_a = received_b = 0;
             int r = leaf::try_handle_all(
                 [&]
                 {
@@ -143,8 +139,6 @@ int main()
                     return leaf::try_handle_some(
                         [&]
                         {
-                            // Not calling future_get, a on_error in this scope won't work correctly.
-                            // This is to verify that the on_error in the outer scope (above) works.
                             return f.fut.get();
                         },
                         []( leaf::error_info const & err )

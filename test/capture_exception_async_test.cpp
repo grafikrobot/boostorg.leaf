@@ -74,8 +74,18 @@ std::vector<fut_info> launch_tasks( int task_count, F f )
 
 int main()
 {
-    int const task_count = 1;
+    int const task_count = 100;
     int received_a, received_b;
+
+    auto task =
+        []( int a, int b, int res ) -> leaf::result<int>
+        {
+            if( res >= 0 )
+                return res;
+            else
+                leaf::throw_exception(info<1>{a}, info<2>{b}, info<3>{});
+        };
+
     auto error_handlers = std::make_tuple(
         [&]( info<1> const & x1, info<2> const & x2, info<4> const & )
         {
@@ -89,15 +99,7 @@ int main()
         } );
 
     {
-        std::vector<fut_info> fut = launch_tasks(
-            task_count,
-            []( int a, int b, int res )
-            {
-                if( res >= 0 )
-                    return res;
-                else
-                    leaf::throw_exception(info<1>{a}, info<2>{b}, info<3>{});
-            } );
+        std::vector<fut_info> fut = launch_tasks(task_count, task);
 
         for( auto & f : fut )
         {
@@ -115,22 +117,14 @@ int main()
             else
             {
                 BOOST_TEST_EQ(r, -1);
-                BOOST_TEST_EQ(received_a, f.a);
-                BOOST_TEST_EQ(received_b, f.b);
+                BOOST_TEST_EQ(f.a, received_a);
+                BOOST_TEST_EQ(f.b, received_b);
             }
         }
     }
 
     {
-        std::vector<fut_info> fut = launch_tasks(
-            task_count,
-            []( int a, int b, int res )
-            {
-                if( res >= 0 )
-                    return res;
-                else
-                    leaf::throw_exception(info<1>{a}, info<2>{b}, info<3>{});
-            } );
+        std::vector<fut_info> fut = launch_tasks(task_count, task);
 
         for( auto & f : fut )
         {
@@ -157,8 +151,8 @@ int main()
             else
             {
                 BOOST_TEST_EQ(r, -1);
-                BOOST_TEST_EQ(received_a, f.a);
-                BOOST_TEST_EQ(received_b, f.b);
+                BOOST_TEST_EQ(f.a, received_a);
+                BOOST_TEST_EQ(f.b, received_b);
             }
         }
     }
