@@ -20,8 +20,8 @@ int main()
 #ifdef BOOST_LEAF_TEST_SINGLE_HEADER
 #   include "leaf.hpp"
 #else
-#   include <boost/leaf/handle_errors.hpp>
 #   include <boost/leaf/result.hpp>
+#   include <boost/leaf/handle_errors.hpp>
 #   include <boost/leaf/exception.hpp>
 #endif
 
@@ -63,48 +63,49 @@ struct info
 
 int main()
 {
-    leaf::result<int> r = leaf::try_handle_some(
-        []() -> leaf::result<int>
-        {
-            leaf::throw_exception(info<1>{}, info<3>{});
-        },
-        [](leaf::dynamic_capture const & cap) -> leaf::result<int>
-        {
-            BOOST_TEST(!cap.empty());
-            BOOST_TEST_EQ(cap.size(), 2);
-            return cap;
-        } );
-    BOOST_TEST_EQ(count, 2);
-
-#if BOOST_LEAF_CFG_STD_STRING
     {
-        std::ostringstream st;
-        st << r;
-        std::string s = st.str();
-        std::cout << s << std::endl;
-        if( BOOST_LEAF_CFG_DIAGNOSTICS )
-        {
-            BOOST_TEST_NE(s.find("info<1> instance"), s.npos);
-            BOOST_TEST_NE(s.find("info<3> instance"), s.npos);
-        }
-    }
-#endif
+        leaf::result<int> r = leaf::try_handle_some(
+            []() -> leaf::result<int>
+            {
+                leaf::throw_exception(info<1>{}, info<3>{});
+            },
+            [](leaf::dynamic_capture const & cap) -> leaf::result<int>
+            {
+                BOOST_TEST(!cap.empty());
+                BOOST_TEST_EQ(cap.size(), 2);
+                return cap;
+            } );
+        BOOST_TEST_EQ(count, 2);
 
-    int ret = leaf::try_catch(
-        [&]() -> int
+    #if BOOST_LEAF_CFG_STD_STRING
         {
-            return r.value();
-        },
-        []( info<1>, info<3> )
-        {
-            return 1;
-        },
-        []
-        {
-            return 2;
-        } );
-    BOOST_TEST_EQ(ret, 1);
-    r = 0;
+            std::ostringstream st;
+            st << r;
+            std::string s = st.str();
+            std::cout << s << std::endl;
+            if( BOOST_LEAF_CFG_DIAGNOSTICS )
+            {
+                BOOST_TEST_NE(s.find("info<1> instance"), s.npos);
+                BOOST_TEST_NE(s.find("info<3> instance"), s.npos);
+            }
+        }
+    #endif
+
+        int ret = leaf::try_catch(
+            [&]
+            {
+                return r.value();
+            },
+            []( info<1>, info<3> )
+            {
+                return 42;
+            },
+            []
+            {
+                return -42;
+            } );
+        BOOST_TEST_EQ(ret, 42);
+    }
     BOOST_TEST_EQ(count, 0);
 
     return boost::report_errors();

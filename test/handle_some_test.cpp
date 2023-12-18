@@ -1453,7 +1453,8 @@ int main()
             []
             {
                 return 2;
-            });            
+            });
+        BOOST_TEST_EQ(r, 1);
     }
 
 #ifndef BOOST_LEAF_NO_EXCEPTIONS

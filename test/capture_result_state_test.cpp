@@ -68,8 +68,10 @@ int main()
             {
                 return leaf::new_error( info<1>{}, info<3>{} );
             },
-            []( leaf::dynamic_capture const & cap ) -> leaf::result<int>
+            [](leaf::dynamic_capture const & cap) -> leaf::result<int>
             {
+                BOOST_TEST(!cap.empty());
+                BOOST_TEST_EQ(cap.size(), 2);
                 return cap;
             } );
         BOOST_TEST_EQ(count, 2);
@@ -88,8 +90,8 @@ int main()
         }
 #endif
 
-        int answer = leaf::try_handle_all(
-            [&r]
+        int ret = leaf::try_handle_all(
+            [&]
             {
                 return std::move(r);
             },
@@ -101,7 +103,7 @@ int main()
             {
                 return -42;
             } );
-        BOOST_TEST_EQ(answer, 42);
+        BOOST_TEST_EQ(ret, 42);
     }
     BOOST_TEST_EQ(count, 0);
 

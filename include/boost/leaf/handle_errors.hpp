@@ -874,7 +874,9 @@ namespace leaf_detail
         using R = decltype(std::declval<TryBlock>()());
         try
         {
-            return std::forward<TryBlock>(try_block)();
+            auto r = std::forward<TryBlock>(try_block)();
+            unload_result(&r);
+            return std::move(r);
         }
         catch( std::exception & ex )
         {
@@ -955,19 +957,39 @@ try_handle_some( TryBlock && try_block, H && ... h )
 }
 
 template <class TryBlock, class... H>
-BOOST_LEAF_CONSTEXPR inline
+inline
 decltype(std::declval<TryBlock>()())
 try_catch( TryBlock && try_block, H && ... h )
 {
     context_type_from_handlers<H...> ctx;
     auto active_context = activate_context(ctx);
-    return leaf_detail::try_catch_(
-        ctx,
-        [&]
-        {
-            return std::forward<TryBlock>(try_block)();
-        },
-        std::forward<H>(h)...);
+    using R = decltype(std::declval<TryBlock>()());
+    try
+    {
+        return std::forward<TryBlock>(try_block)();
+    }
+    catch( std::exception & ex )
+    {
+        ctx.deactivate();
+        error_info e(&ex);
+        return leaf_detail::handle_error_<R>(ctx.tup(), e, std::forward<H>(h)...,
+            [&]() -> R
+            {
+                ctx.unload(e.error());
+                throw;
+            } );
+    }
+    catch(...)
+    {
+        ctx.deactivate();
+        error_info e(nullptr);
+        return leaf_detail::handle_error_<R>(ctx.tup(), e, std::forward<H>(h)...,
+            [&]() -> R
+            {
+                ctx.unload(e.error());
+                throw;
+            } );
+    }
 }
 
 #endif

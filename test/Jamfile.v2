@@ -56,6 +56,7 @@ run BOOST_LEAF_CHECK_test.cpp ;
 run boost_exception_test.cpp ;
 run capture_exception_async_test.cpp ;
 run capture_exception_result_async_test.cpp ;
+run capture_exception_result_unload_test.cpp ;
 run capture_exception_state_test.cpp ;
 run capture_exception_unload_test.cpp ;
 run capture_result_async_test.cpp ;

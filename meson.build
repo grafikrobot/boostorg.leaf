@@ -116,6 +116,7 @@ if option_enable_unit_tests
         'BOOST_LEAF_CHECK_test',
         'capture_exception_async_test',
         'capture_exception_result_async_test',
+        'capture_exception_result_unload_test',
         'capture_exception_state_test',
         'capture_exception_unload_test',
         'capture_result_async_test',

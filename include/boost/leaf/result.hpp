@@ -557,14 +557,11 @@ public:
         return error_id(error()).load(std::forward<Item>(item)...);
     }
 
-    void unload() noexcept
+    void unload()
     {
 #if BOOST_LEAF_CFG_CAPTURE
         if( what_.kind() == result_discriminant::err_id_capture_list )
-        {
-            int err_id = what_.get_error_id().value();
-            cap_.unload( err_id );
-        }
+            cap_.unload(what_.get_error_id().value());
 #endif
     }
 
