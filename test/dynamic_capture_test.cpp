@@ -28,33 +28,38 @@ int main()
 
 namespace leaf = boost::leaf;
 
-template <int>
-struct err
+namespace
 {
-    static int count;
-
-    err()
+    template <int>
+    struct err
     {
-        ++count;
-    }
+        static int count;
+        static int move_count;
 
-    err( err const & )
-    {
-        ++count;
-    }
+        err()
+        {
+            ++count;
+        }
 
-    err( err && )
-    {
-        ++count;
-    }
+        err( err const & )
+        {
+            ++count;
+        }
 
-    ~err()
-    {
-        --count;
-    }
-};
-template <int N>
-int err<N>::count = 0;
+        err( err && )
+        {
+            ++count;
+            ++move_count;
+        }
+
+        ~err()
+        {
+            --count;
+        }
+    };
+    template <int N> int err<N>::count = 0;
+    template <int N> int err<N>::move_count = 0;
+}
 
 int main()
 {
@@ -73,6 +78,7 @@ int main()
             },
             []
             {
+                BOOST_TEST(false);
             });
         BOOST_TEST_EQ(err<1>::count, 0);
         BOOST_TEST_EQ(err<2>::count, 0);
@@ -109,9 +115,24 @@ int main()
                 BOOST_TEST(!cap.empty());
                 return cap;
             } );
+        BOOST_TEST(!r);
         BOOST_TEST_EQ(err<1>::count, 1);
         BOOST_TEST_EQ(err<2>::count, 1);
-        (void) r;
+        int r1 = leaf::try_handle_all(
+            [&]() -> leaf::result<int>
+            {
+                BOOST_LEAF_CHECK(r);
+                return 0;
+            },
+            [](err<1>, err<2>)
+            {
+                return 1;
+            },
+            []
+            {
+                return 2;
+            } );
+        BOOST_TEST_EQ(r1, 1);
     }
     BOOST_TEST_EQ(err<1>::count, 0);
     BOOST_TEST_EQ(err<2>::count, 0);
@@ -130,12 +151,147 @@ int main()
                 BOOST_TEST(!cap.empty());
                 return cap;
             } );
+        BOOST_TEST(!r);
         BOOST_TEST_EQ(err<1>::count, 1);
         BOOST_TEST_EQ(err<2>::count, 1);
-        (void) r;
+        int r1 = leaf::try_handle_all(
+            [&]() -> leaf::result<int>
+            {
+                BOOST_LEAF_CHECK(r);
+                return 0;
+            },
+            [](err<1>, err<2>)
+            {
+                return 1;
+            },
+            []
+            {
+                return 2;
+            } );
+        BOOST_TEST_EQ(r1, 1);
     }
     BOOST_TEST_EQ(err<1>::count, 0);
     BOOST_TEST_EQ(err<2>::count, 0);
+
+    // nested/unload
+    {
+        leaf::result<void> r = leaf::try_handle_some(
+            []() -> leaf::result<void>
+            {
+                return leaf::try_handle_some(
+                    []() -> leaf::result<void>
+                    {
+                        return leaf::new_error(err<1>{}, err<2>{}, err<3>{});
+                    },
+                    []( err<3>, err<4> )
+                    {
+                        BOOST_TEST(false);
+                    },
+                    [&]( leaf::error_info const & ei, leaf::dynamic_capture const & cap )
+                    {
+                        BOOST_TEST_EQ(err<1>::count, 1);
+                        BOOST_TEST_EQ(err<2>::count, 1);
+                        BOOST_TEST_EQ(err<3>::count, 1);
+                        BOOST_TEST_EQ(cap.size(), 2);
+                        BOOST_TEST(!cap.empty());
+                        err<1>::move_count = 0;
+                        err<2>::move_count = 0;
+                        return ei.error();
+                    } );
+            },
+            []( leaf::dynamic_capture const & cap ) -> leaf::result<void>
+            {
+                BOOST_TEST_EQ(err<1>::count, 1);
+                BOOST_TEST_EQ(err<2>::count, 1);
+                BOOST_TEST_EQ(err<3>::count, 1);
+                BOOST_TEST_EQ(cap.size(), 3);
+                BOOST_TEST(!cap.empty());
+                return cap;
+            } );
+        BOOST_TEST_EQ(err<1>::count, 1);
+        BOOST_TEST_EQ(err<2>::count, 1);
+        BOOST_TEST_EQ(err<3>::count, 1);
+        BOOST_TEST_EQ(err<1>::move_count, 0);
+        BOOST_TEST_EQ(err<2>::move_count, 0);
+        int r1 = leaf::try_handle_all(
+            [&]() -> leaf::result<int>
+            {
+                BOOST_LEAF_CHECK(r);
+                return 0;
+            },
+            [](err<1>, err<2>)
+            {
+                return 1;
+            },
+            []
+            {
+                return 2;
+            } );
+        BOOST_TEST_EQ(r1, 1);
+    }
+    BOOST_TEST_EQ(err<1>::count, 0);
+    BOOST_TEST_EQ(err<2>::count, 0);
+    BOOST_TEST_EQ(err<3>::count, 0);
+
+    // nested/unload, different order
+    {
+        leaf::result<void> r = leaf::try_handle_some(
+            []() -> leaf::result<void>
+            {
+                return leaf::try_handle_some(
+                    []() -> leaf::result<void>
+                    {
+                        return leaf::new_error(err<1>{}, err<2>{}, err<3>{});
+                    },
+                    [&]( leaf::error_info const & ei, leaf::dynamic_capture const & cap )
+                    {
+                        BOOST_TEST_EQ(err<1>::count, 1);
+                        BOOST_TEST_EQ(err<2>::count, 1);
+                        BOOST_TEST_EQ(err<3>::count, 1);
+                        BOOST_TEST_EQ(cap.size(), 2);
+                        BOOST_TEST(!cap.empty());
+                        err<1>::move_count = 0;
+                        err<2>::move_count = 0;
+                        return ei.error();
+                    },
+                    []( err<3>, err<4> )
+                    {
+                        BOOST_TEST(false);
+                    } );
+            },
+            []( leaf::dynamic_capture const & cap ) -> leaf::result<void>
+            {
+                BOOST_TEST_EQ(err<1>::count, 1);
+                BOOST_TEST_EQ(err<2>::count, 1);
+                BOOST_TEST_EQ(err<3>::count, 1);
+                BOOST_TEST_EQ(cap.size(), 3);
+                BOOST_TEST(!cap.empty());
+                return cap;
+            } );
+        BOOST_TEST_EQ(err<1>::count, 1);
+        BOOST_TEST_EQ(err<2>::count, 1);
+        BOOST_TEST_EQ(err<3>::count, 1);
+        BOOST_TEST_EQ(err<1>::move_count, 0);
+        BOOST_TEST_EQ(err<2>::move_count, 0);
+        int r1 = leaf::try_handle_all(
+            [&]() -> leaf::result<int>
+            {
+                BOOST_LEAF_CHECK(r);
+                return 0;
+            },
+            [](err<1>, err<2>)
+            {
+                return 1;
+            },
+            []
+            {
+                return 2;
+            } );
+        BOOST_TEST_EQ(r1, 1);
+    }
+    BOOST_TEST_EQ(err<1>::count, 0);
+    BOOST_TEST_EQ(err<2>::count, 0);
+    BOOST_TEST_EQ(err<3>::count, 0);
 
     return boost::report_errors();
 }

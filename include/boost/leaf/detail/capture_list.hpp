@@ -81,11 +81,6 @@ namespace leaf_detail
             }
         }
 
-        bool empty() const noexcept
-        {
-            return first_ == nullptr;
-        }
-
         void unload( int const err_id )
         {
             capture_list moved(first_);
@@ -96,6 +91,11 @@ namespace leaf_detail
                 {
                     n.unload(err_id); // last node may throw
                 } );
+        }
+
+        bool empty() const noexcept
+        {
+            return first_ == nullptr;
         }
 
         template <class CharT, class Traits>

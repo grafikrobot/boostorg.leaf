@@ -317,7 +317,7 @@ namespace leaf_detail
 #endif
 
         int err_id_;
-        capture_list::node * * last_;
+        node * * last_;
 
     public:
 
@@ -338,6 +338,17 @@ namespace leaf_detail
             BOOST_LEAF_ASSERT(*last_ == nullptr);
             BOOST_LEAF_ASSERT(other.first_ == nullptr);
             other.last_ = &other.first_;
+        }
+
+        BOOST_LEAF_CONSTEXPR void append( dynamic_allocator && other ) noexcept
+        {
+            if( node * other_first = other.first_ )
+            {
+                *last_ = other_first;
+                last_ = other.last_;
+                other.first_ = nullptr;
+                other.last_ = &other.first_;
+            }
         }
 
         template <class E>
@@ -387,7 +398,6 @@ namespace leaf_detail
         }
 
         using capture_list::empty;
-        using capture_list::unload;
         using capture_list::print;
     };
 
@@ -414,8 +424,13 @@ namespace leaf_detail
     template <>
     inline void slot<dynamic_allocator>::unload( int err_id ) noexcept(false)
     {
-        if( dynamic_allocator * c = this->has_value(err_id) )
-            c->unload(err_id);
+        BOOST_LEAF_ASSERT(err_id);
+        if( dynamic_allocator * da1 = this->has_value(err_id) )
+            if( impl * p = tls::read_ptr<slot<dynamic_allocator>>() )
+                if( dynamic_allocator * da2 = p->has_value(err_id) )
+                    da2->append(std::move(*da1));
+                else
+                    *p = std::move(*this);
     }
 
     template <class E>
