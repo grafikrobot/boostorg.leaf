@@ -5,6 +5,11 @@
 
 #include <boost/leaf/config.hpp>
 
+#if BOOST_LEAF_CFG_STD_STRING
+#   include <sstream>
+#   include <iostream>
+#endif
+
 #if !BOOST_LEAF_CFG_CAPTURE
 
 #include <iostream>
@@ -213,6 +218,23 @@ int main()
         BOOST_TEST_EQ(err<3>::count, 1);
         BOOST_TEST_EQ(err<1>::move_count, 0);
         BOOST_TEST_EQ(err<2>::move_count, 0);
+        BOOST_TEST(!r);
+#if BOOST_LEAF_CFG_STD_STRING
+        {
+            std::ostringstream st;
+            st << r;
+            std::string s = st.str();
+            std::cout << s << std::endl;
+            if( BOOST_LEAF_CFG_DIAGNOSTICS )
+            {
+                auto n1 = s.find("err<1>");
+                auto n3 = s.find("err<3>");
+                BOOST_TEST_NE(n1, s.npos);
+                BOOST_TEST_NE(n3, s.npos);
+                BOOST_TEST_LT(n1, n3);
+            }
+        }
+#endif
         int r1 = leaf::try_handle_all(
             [&]() -> leaf::result<int>
             {
@@ -273,6 +295,23 @@ int main()
         BOOST_TEST_EQ(err<3>::count, 1);
         BOOST_TEST_EQ(err<1>::move_count, 0);
         BOOST_TEST_EQ(err<2>::move_count, 0);
+        BOOST_TEST(!r);
+#if BOOST_LEAF_CFG_STD_STRING
+        {
+            std::ostringstream st;
+            st << r;
+            std::string s = st.str();
+            std::cout << s << std::endl;
+            if( BOOST_LEAF_CFG_DIAGNOSTICS )
+            {
+                auto n1 = s.find("err<1>");
+                auto n3 = s.find("err<3>");
+                BOOST_TEST_NE(n1, s.npos);
+                BOOST_TEST_NE(n3, s.npos);
+                BOOST_TEST_LT(n3, n1);
+            }
+        }
+#endif
         int r1 = leaf::try_handle_all(
             [&]() -> leaf::result<int>
             {
