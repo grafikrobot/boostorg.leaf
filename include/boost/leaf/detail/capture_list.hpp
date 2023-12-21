@@ -118,7 +118,7 @@ namespace leaf_detail
             (void) err_id_to_print;
 #endif
         }
-};
+    };
 
 }
 
