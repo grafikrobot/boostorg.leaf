@@ -340,7 +340,7 @@ namespace leaf_detail
             other.last_ = &other.first_;
         }
 
-        BOOST_LEAF_CONSTEXPR void append( dynamic_allocator && other ) noexcept
+        void append( dynamic_allocator && other ) noexcept
         {
             if( node * other_first = other.first_ )
             {
