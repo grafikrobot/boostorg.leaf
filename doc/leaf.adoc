@@ -3854,6 +3854,41 @@ When an object of type `dynamic_capture const &` is returned from a handler that
 
 Under `BOOST_LEAF_CFG_CAPTURE=0`, `dynamic_capture` is unavailable.
 
+[WARNING]
+--
+A `dynamic_capture` does not capture all error objects, only the ones that would have been discarded if not for the presence of a `dynamic_capture` handler. In the example below, the returned `result<void>` will capture the error object of type `E2` but not `e1`:
+```
+auto r = try_handle_some(
+  []() -> leaf::result<void>
+  {
+    return leaf::new_error(E1{}, E2{});
+  },
+  []( E1 e1, leaf::dynamic_capture const & cap ) -> leaf::result<void>
+  {
+    return cap;
+  });
+```
+Perhaps more surprising, this is true for the next example as well:
+```
+auto r = try_handle_some(
+  []() -> leaf::result<void>
+  {
+    return try_handle_some(
+      []() -> leaf::result<void>
+      {
+        return leaf::new_error(E1{}, E2{});
+      },
+      []( leaf::dynamic_capture const & cap ) -> leaf::result<void>
+      {
+        return cap;
+      });
+  },
+  []( E1 e1 )
+  {
+  });
+```
+--
+
 See also: :: <<tutorial-async>>.
 
 '''
