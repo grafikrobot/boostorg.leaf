@@ -58,14 +58,10 @@ std::vector<fut_info> launch_tasks( int task_count, F f )
             return fut_info { a, b, res, std::async( std::launch::async,
                 [=]
                 {
-                    return leaf::try_handle_some(
-                        [&]() -> leaf::result<int>
+                    return leaf::try_capture_all(
+                        [&]
                         {
                             return f(a, b, res);
-                        },
-                        []( leaf::dynamic_capture const & cap ) -> leaf::result<int>
-                        {
-                            return cap;
                         } );
                 } ) };
         } );
@@ -78,7 +74,7 @@ int main()
     int received_a, received_b;
 
     auto task =
-        []( int a, int b, int res ) -> leaf::result<int>
+        []( int a, int b, int res )
         {
             if( res >= 0 )
                 return res;

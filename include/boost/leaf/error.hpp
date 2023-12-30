@@ -70,9 +70,6 @@ namespace boost { namespace leaf {
 
 class BOOST_LEAF_SYMBOL_VISIBLE error_id;
 
-template <class T>
-class BOOST_LEAF_SYMBOL_VISIBLE result;
-
 namespace leaf_detail
 {
     struct BOOST_LEAF_SYMBOL_VISIBLE tls_tag_id_factory_current_id;
@@ -384,8 +381,8 @@ namespace leaf_detail
             return c;
         }
 
-        template <class T>
-        result<T> extract_capture_list() noexcept
+        template <class LeafResult>
+        LeafResult extract_capture_list() noexcept
         {
 #ifndef BOOST_LEAF_NO_EXCEPTIONS
             if( std::exception_ptr ex = std::current_exception() )

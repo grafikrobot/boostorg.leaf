@@ -140,7 +140,6 @@ if option_enable_unit_tests
         'diagnostic_info_test3',
         'diagnostic_info_test4',
         'diagnostic_info_test5',
-        'dynamic_capture_print_test',
         'dynamic_capture_test',
         'e_errno_test',
         'e_LastError_test',
