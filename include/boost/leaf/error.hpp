@@ -807,6 +807,18 @@ inline error_id current_error() noexcept
     return leaf_detail::make_error_id(leaf_detail::current_id());
 }
 
+////////////////////////////////////////////
+
+class polymorphic_context
+{
+};
+
+#if BOOST_LEAF_CFG_CAPTURE
+using context_ptr = std::shared_ptr<polymorphic_context>;
+#endif
+
+////////////////////////////////////////////
+
 template <class Ctx>
 class context_activator
 {
