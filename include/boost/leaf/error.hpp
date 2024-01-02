@@ -370,17 +370,6 @@ namespace leaf_detail
                 } );
         }
 
-        int size() const noexcept
-        {
-            int c = 0;
-            for_each(
-                [&]( capture_list::node const & )
-                {
-                    ++c;
-                } );
-            return c;
-        }
-
         template <class LeafResult>
         LeafResult extract_capture_list() noexcept
         {
@@ -394,7 +383,6 @@ namespace leaf_detail
             return { err_id_, capture_list(f) };
         }
 
-        using capture_list::empty;
         using capture_list::print;
     };
 
