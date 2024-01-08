@@ -107,10 +107,9 @@ namespace leaf_detail
         }
     };
 
-    template <class F>
+    template <class F, class ReturnType = typename function_traits<F>::return_type>
     class deferred_item
     {
-        using E = decltype(std::declval<F>()());
         F f_;
 
     public:
@@ -126,13 +125,30 @@ namespace leaf_detail
         }
     };
 
+    template <class F>
+    class deferred_item<F, void>
+    {
+        F f_;
+
+    public:
+
+        BOOST_LEAF_CONSTEXPR deferred_item( F && f ) noexcept:
+            f_(std::forward<F>(f))
+        {
+        }
+
+        BOOST_LEAF_CONSTEXPR void trigger( int ) noexcept
+        {
+            f_();
+        }
+    };
+
     template <class F, class A0 = fn_arg_type<F,0>, int arity = function_traits<F>::arity>
     class accumulating_item;
 
     template <class F, class A0>
     class accumulating_item<F, A0 &, 1>
     {
-        using E = A0;
         F f_;
 
     public:
