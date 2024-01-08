@@ -121,7 +121,7 @@ namespace leaf_detail
 
         BOOST_LEAF_CONSTEXPR void trigger( int err_id ) noexcept
         {
-            (void) load_slot<true>(err_id, f_());
+            (void) load_slot_deferred<true>(err_id, f_);
         }
     };
 
@@ -160,7 +160,7 @@ namespace leaf_detail
 
         BOOST_LEAF_CONSTEXPR void trigger( int err_id ) noexcept
         {
-            accumulate_slot<true>(err_id, std::move(f_));
+            load_slot_accumulate<true>(err_id, std::move(f_));
         }
     };
 
