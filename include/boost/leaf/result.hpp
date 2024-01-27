@@ -371,6 +371,13 @@ public:
     {
     }
 
+    template<class... A, class = typename std::enable_if<std::is_constructible<T, A...>::value && sizeof...(A) >= 1>::type>
+    result( A&&... a ) noexcept:
+        stored_(std::forward<A>(a)...),
+        what_(result_discriminant::kind_val{})
+    {
+    }
+
     result( error_id err ) noexcept:
         what_(err)
     {
