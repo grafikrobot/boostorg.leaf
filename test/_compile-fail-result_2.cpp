@@ -6,12 +6,13 @@
 
 #include <boost/leaf.hpp>
 #include <string>
-#include <vector>
 
-size_t g() {
-  return 42;
-}
+struct A
+{
+    explicit A(int) { };
+};
 
-boost::leaf::result<std::vector<std::string>> f() {
-  return g(); // vector constructor is explicit
+boost::leaf::result<A> f()
+{
+    return 42;
 }
